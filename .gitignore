@@ -1,0 +1,5 @@
+*.pdf
+*.png
+*.cdf
+.DS_Store
+*.npy
