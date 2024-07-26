@@ -12,8 +12,7 @@ plt.ion()
 font = {'size'   : 12}
 rc('font', **font)
 
-sys.path.append("..")
-from proposal_codes import fit_2D_gaussian as fit_gauss
+from source_scripts import fit_2D_gaussian as fit_gauss
 
 def get_subplot_axes():
     # definitions for the axes
@@ -92,7 +91,7 @@ def interpolate_vdf(pp, tt, vdf, Nphi= 201, Ntheta = 101):
     return phim, thetam, logvdf_
 
 if __name__=='__main__':
-    filename = '../proposal_codes/2022-02-27_Avg350s_VDFs.cdf'
+    filename = './input_data_files/2022-02-27_Avg350s_VDFs.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
     # Each array should be in the shape of [Ntime, dim1, dim2, dim3]
@@ -164,32 +163,9 @@ if __name__=='__main__':
     fit_params = fit_gauss.scale_fitparams(fit_params, pp, tt)
     gauss = fit_gauss.gaussian(fit_params, pp, tt)
 
-    '''
-    ax1.contourf(pp_orig, tt_orig, np.log10(vv), cmap='rainbow', rasterized=True, levels=levels)
-    ax1.set_xlim([90,200])
-    ax1.set_ylim([0,180])
-    ax1.set_aspect('equal')
-
-    ax0.contourf(pp_orig, tt_orig, np.log10(vv), cmap='rainbow', rasterized=True, levels=levels)
-    ax0.set_xlim([90,200])
-    ax0.set_ylim([0,180])
-    ax0.set_aspect('equal')
-    ax0.contour(pp, tt, gauss, colors='k', linestyles='dashed', linewidths=1, levels=5)
-    ax0.text(0.99, 0.95, f'({fit_params[1]:.2f}, {fit_params[2]:.2f})', transform=ax0.transAxes,
-             va='top', ha='right', color='blue')
-    ax0.plot(fit_params[1], fit_params[2], 'xk')
-
-    plt.subplots_adjust(top=0.95, bottom=0.08, left=0.1, right=0.99, wspace=0.05, hspace=0.05)
-
-    ax1.set_xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=14)
-    ax0.set_ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=14)
-    ax0.set_xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=14)
-    '''
     # start with a rectangular Figure
     fig = plt.figure(1, figsize=(5, 6))
     ax = get_subplot_axes()
-
-    # sys.exit()
 
     ax[0].contourf(pp_orig, tt_orig, np.log10(vv), cmap='rainbow', rasterized=True, levels=levels)
     ax[0].set_xlim([0,360])
@@ -202,33 +178,12 @@ if __name__=='__main__':
     ax[0].set_ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=14)
     ax[0].set_xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=14)
 
-    print(phi_theta_cen)
-
     ax[1].hist(phi_theta_cen[:,1], bins=5, range=(150, 175), facecolor='grey')
     ax[2].hist(phi_theta_cen[:,2], bins=5, range=(75, 90), orientation='horizontal', facecolor='grey')
     ax[1].set_xlim([20,330])
     ax[2].set_ylim([0,180])
 
-    # plotting the histogram of the located 2D gaussian peaks
-    '''
-    (mu_phi, sigma_phi) = norm.fit(phi_theta_cen[:,1])
-    (mu_theta, sigma_theta) = norm.fit(phi_theta_cen[:,2])
-    __, bins_phi, __ = ax2.hist(phi_theta_cen[:,1], 10, facecolor='blue', alpha=0.5, density=True)
-    __, bins_theta, __ = ax2.hist(phi_theta_cen[:,2], 10, facecolor='grey', alpha=0.5, density=True)
-    phi_hist_gaussfit = norm.pdf(bins_phi, mu_phi, sigma_phi)
-    theta_hist_gaussfit = norm.pdf(bins_theta, mu_theta, sigma_theta)
-    ax2.plot(bins_phi, phi_hist_gaussfit, '--', color='blue', linewidth=2)
-    ax2.plot(bins_theta, theta_hist_gaussfit, 'k--', linewidth=2)
-    ax2.axvline(mu_phi, color='blue')
-    ax2.axvline(mu_theta, color='black')
-
-    # plotting this mean center in the top panel
-    ax1.plot(fit_params[1], fit_params[2], '.r')
-    ax1.axvline(pp_orig[-1,0], color='red', alpha=0.5)
-    '''
-
     for res_idx in range(2,8):
-        print(res_idx)
         ax[3].contourf(pp_orig[:res_idx+1] + res_idx * 120, tt_orig[:res_idx+1], np.log10(vv)[:res_idx+1],
                        cmap='rainbow', rasterized=True, levels=levels)
         if(res_idx < 7):
@@ -292,7 +247,4 @@ if __name__=='__main__':
     fig.add_subplot(111, frameon=False)
     plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 
-    plt.savefig('plots/Fig1_trial.pdf')
-
-    # saving the locations of the centers
-    # np.save('center_locs/phi_theta_cen.npy', np.array(phi_theta_cen))
+    plt.savefig('VDF_paper1_plots/Fig1_PSP.pdf')
