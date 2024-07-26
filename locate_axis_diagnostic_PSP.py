@@ -18,9 +18,7 @@ plt.ion()
 font = {'size'   : 12}
 rc('font', **font)
 
-# relative path import to be replaced by package import
-sys.path.append("..")
-from proposal_codes import fit_2D_gaussian as fit_gauss
+from source_scripts import fit_2D_gaussian as fit_gauss
 
 def interpolate_vdf(pp, tt, vdf, Nphi= 201, Ntheta = 101):
     '''
@@ -75,7 +73,7 @@ if __name__=='__main__':
     Nrows, Ncols = 4, 8
 
     # the source file containing the VDF data
-    filename = '../proposal_codes/2022-02-27_Avg350s_VDFs.cdf'
+    filename = './input_data_files/2022-02-27_Avg350s_VDFs.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
     # Each array should be in the shape of [Ntime, dim1, dim2, dim3]
@@ -90,10 +88,13 @@ if __name__=='__main__':
     # time index with a nice VDF realization
     time_idx = 51
 
-    fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,10), sharex=True, sharey=True)
+    fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
 
     # levels chosen just to plot the 2D Gaussian over the VDF
     levels = np.linspace(0, 7, 10)
+
+    # making list to store the gyroaxis locations for each shell
+    phi_theta_cen = []
 
     # making the diagnostic subplots
     for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
@@ -123,8 +124,6 @@ if __name__=='__main__':
             fit_params = fit_gauss.fitgaussian(logvv)
             fit_params = fit_gauss.scale_fitparams(fit_params, pp, tt)
 
-            # sys.exit()
-
             # make Gaussian from fit
             gauss = fit_gauss.gaussian(fit_params, pp, tt)
             # plotting the 2D contours of the fitted Gaussian
@@ -134,15 +133,19 @@ if __name__=='__main__':
             ax[row,col].plot(fit_params[1], fit_params[2], 'xk')
 
             # appending the located centers
-            # phi_theta_cen.append([E_idx, fit_params[1], fit_params[2]])
+            phi_theta_cen.append([E_idx, fit_params[1], fit_params[2]])
 
         except: continue
 
-    plt.subplots_adjust(top=0.99, bottom=0.02, left=0.05, right=0.98, wspace=0.05, hspace=0.05)
+    plt.subplots_adjust(top=0.99, bottom=0.01, left=0.03, right=0.99, wspace=0.05, hspace=0.05)
     # to put common x and y labels
     fig.add_subplot(111, frameon=False)
     plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-    plt.xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=16)
-    plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
+    # plt.xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=16)
+    # plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
 
-    plt.savefig('plots/locate_axis_diagnostic.pdf')
+    plt.savefig('VDF_paper1_plots/locate_axis_diagnostic.pdf')
+
+    # saving the locations of the centers
+    phi_theta_cen = np.asarray(phi_theta_cen)
+    np.save('output_data_files/phi_theta_cen_PSP.npy', phi_theta_cen)

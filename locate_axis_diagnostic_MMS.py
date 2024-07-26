@@ -18,9 +18,7 @@ plt.ion()
 font = {'size'   : 12}
 rc('font', **font)
 
-# relative path import to be replaced by package import
-sys.path.append("..")
-from proposal_codes import fit_2D_gaussian as fit_gauss
+from source_scripts import fit_2D_gaussian as fit_gauss
 
 def interpolate_vdf(pp, tt, vdf, Nphi= 201, Ntheta = 101):
     '''
@@ -75,7 +73,7 @@ if __name__=='__main__':
     Nrows, Ncols = 4, 8
 
     # the source file containing the VDF data
-    filename = 'mms_data_period.cdf'
+    filename = 'input_data_files/mms_data_period.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
     # Each array should be in the shape of [Ntime, dim1, dim2, dim3]
@@ -150,7 +148,8 @@ if __name__=='__main__':
     # plt.xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=16)
     # plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
 
-    plt.savefig('plots/locate_axis_diagnostic_MMS.pdf')
+    plt.savefig('VDF_paper1_plots/locate_axis_diagnostic_MMS.pdf')
 
     # saving the locations of the centers
-    np.save('center_locs_MMS/phi_theta_cen_MMS.npy', np.array(phi_theta_cen))
+    phi_theta_cen = np.asarray(phi_theta_cen)
+    np.save('output_data_files/phi_theta_cen_MMS.npy', phi_theta_cen)
