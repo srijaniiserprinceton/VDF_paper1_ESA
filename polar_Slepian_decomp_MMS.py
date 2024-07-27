@@ -16,23 +16,43 @@ plt.ion()
 
 sys.path.append('..')
 
-import rotate_funcs
-# from locate_axis import interpolate_vdf
+from source_scripts import rotate_funcs
 
-filename = 'mms_data_period.cdf'
+
+filename = 'input_data_files/mms_data_period.cdf'
 data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
 # Each array should be in the shape of [Ntime, dim1, dim2, dim3]
 # where Ntime is the number of time stamps
-# dim1 is the phi dimension, dim3 is the energy, and dim2 is theta index
+# dim1 is the phi dimension, dim2 is theta index, and dim3 is the energy
 Energy, Theta, Phi, VDF = data.energy.data, data.theta.data,\
-                            data.phi.data, data.distribution.data
+                          data.phi.data, data.distribution.data
 
 # time index with a nice VDF realization
 time_idx = 700
 
 # range of energy shells within which we have nice VDFs
 E_idx_min, E_idx_max = 10, 18
+'''
+
+filename = './input_data_files/2022-02-27_Avg350s_VDFs.cdf'
+data = cdflib.cdf_to_xarray(filename, to_datetime=True)
+
+# Each array should be in the shape of [Ntime, dim1, dim2, dim3]
+# where Ntime is the number of time stamps
+# dim1 is the phi dimension, dim2 is the energy, and dim3 is theta index
+Energy = data.energy.data
+Theta = data.theta.data
+Phi = data.phi.data
+VDF = data.vdf.data
+
+# time index with a nice VDF realization
+time_idx = 51
+
+# range of energy shells within which we have nice VDFs
+# E_idx_min, E_idx_max = 14, 28
+E_idx_min, E_idx_max = 14, 22
+'''
 
 def create_gridspec():
     # fig, ax = plt.subplots(3, 5, figsize=(15,6), sharex=True, sharey=True)
@@ -57,7 +77,8 @@ def create_gridspec():
 levels = np.linspace(0, 7, 10)
 
 # phi, theta centers from locate_axis.py
-phi_theta_cen = np.load('center_locs_MMS/phi_theta_cen_MMS.npy')
+phi_theta_cen = np.load('output_data_files/phi_theta_cen_MMS.npy')
+# phi_theta_cen = np.load('output_data_files/phi_theta_cen_PSP.npy')
 
 def interpolate_on_rotated_grid(p, t, v, betas):
     Ntheta, Nphi = 101, 201
@@ -88,7 +109,7 @@ def interpolate_on_rotated_grid(p, t, v, betas):
 
     # intepolation step
     # logvdf_interp = CloughTocher2DInterpolator(points, v, fill_value=np.nan)
-    logvdf_interp = Rbf(X_, Y_, Z_, v, epsilon=0.25, smooth=0)
+    logvdf_interp = Rbf(X_, Y_, Z_,  v, epsilon=0.25, smooth=0)
 
     # query at new regular grid points
     Xn = np.sin(thetam) * np.cos(phim)
@@ -103,9 +124,10 @@ def interpolate_on_rotated_grid(p, t, v, betas):
 logvv_derotated = np.zeros((E_idx_max - E_idx_min + 1, 101, 201))
 
 # making the plots to see what we are dealing with
-for j in range(50):
+for j in range(49, 50):
     ax2d, ax3d = create_gridspec()
     for i, E_idx in enumerate(np.arange(E_idx_min, E_idx_max+1)):
+        
         # Each array should be in the shape of [Ntime, dim1, dim2, dim3]
         # where Ntime is the number of time stamps
         # dim1 is the phi dimension, dim3 is the energy, and dim2 is theta index
@@ -117,8 +139,8 @@ for j in range(50):
 
         vv[vv == 0] = np.nan
         vv = vv / np.nanmin(vv)
-        vv = np.log10(vv)
-        vv[np.abs(vv) == np.inf] = np.nan
+        # vv = np.log10(vv)
+        # vv[np.abs(vv) == np.inf] = np.nan
         vv = np.roll(vv, (15, 2), axis=(0,1))
         vv = vv[:]
 
@@ -128,6 +150,17 @@ for j in range(50):
         # tt = tt[::-1,::-1]
         # pp = pp[::-1,::-1]
         # vv = vv[::-1,::-1]
+        '''
+        E = Energy[time_idx, :, E_idx, :][0, 0]
+        tt, pp, vv = Theta[time_idx, :, E_idx, :], Phi[time_idx, :, E_idx, :], VDF[time_idx, :, E_idx, :]
+
+        # changing the convention of theta from (-90, 90) to (0, 180)
+        tt = -(tt - 90)
+
+        tt = tt[::-1,::-1]
+        pp = pp[::-1,::-1]
+        vv = vv[::-1,::-1]
+        '''
 
         x = np.sin(tt*np.pi/180) * np.cos(pp*np.pi/180)
         y = np.sin(tt*np.pi/180) * np.sin(pp*np.pi/180)
@@ -138,7 +171,10 @@ for j in range(50):
 
         # finding the rotated logvdf
         phi_flat, theta_flat, vdf_flat = pp.flatten(), tt.flatten(), vv.flatten()
+        '''
         logvdf_flat = vdf_flat #np.log10(vdf_flat)
+        '''
+        logvdf_flat = np.log10(vdf_flat)
 
         # logvdf_flat = vv
         logvdf_flat[np.abs(logvdf_flat) == np.inf] = np.nan
@@ -180,9 +216,9 @@ for j in range(50):
         # storing the derotated profile
         logvv_derotated[i] = logvv_rot[2]
 
-    plt.savefig(f'derotation_gif_MMS/{j}.png')
+    plt.savefig(f'VDF_paper1_plots/derotation_gif_MMS/{j}.png')
     plt.close()
 
-# saving the derotated logvv
-np.save('derotated_logvv.npy', logvv_derotated)
+# # saving the derotated logvv
+# np.save('derotated_logvv.npy', logvv_derotated)
 

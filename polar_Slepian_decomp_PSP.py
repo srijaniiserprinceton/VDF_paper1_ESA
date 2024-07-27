@@ -15,7 +15,6 @@ from scipy.interpolate import LinearNDInterpolator
 plt.ion()
 
 from source_scripts import rotate_funcs
-# from locate_axis import interpolate_vdf
 
 filename = './input_data_files/2022-02-27_Avg350s_VDFs.cdf'
 data = cdflib.cdf_to_xarray(filename, to_datetime=True)
@@ -33,7 +32,7 @@ time_idx = 51
 
 # range of energy shells within which we have nice VDFs
 # E_idx_min, E_idx_max = 14, 28
-E_idx_min, E_idx_max = 15, 23
+E_idx_min, E_idx_max = 14, 22
 
 def create_gridspec():
     # fig, ax = plt.subplots(3, 5, figsize=(15,6), sharex=True, sharey=True)
