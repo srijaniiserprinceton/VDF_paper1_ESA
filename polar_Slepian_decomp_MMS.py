@@ -80,7 +80,7 @@ levels = np.linspace(0, 7, 10)
 phi_theta_cen = np.load('output_data_files/phi_theta_cen_MMS.npy')
 # phi_theta_cen = np.load('output_data_files/phi_theta_cen_PSP.npy')
 
-def interpolate_on_rotated_grid(p, t, v, betas):
+def interpolate_on_rotated_grid_PSP(p, t, v, betas):
     Ntheta, Nphi = 101, 201
     phi = np.linspace(0, 2*np.pi, Nphi)
     theta = np.linspace(0, np.pi, Ntheta)
@@ -117,6 +117,60 @@ def interpolate_on_rotated_grid(p, t, v, betas):
     Zn = np.cos(thetam)
 
     logvdf_ = logvdf_interp(Xn, Yn, Zn)
+
+    return phim, thetam, logvdf_
+
+def interpolate_on_rotated_grid(p, t, v, betas):
+    Ntheta, Nphi = 101, 201
+    phi = np.linspace(0, 2*np.pi, Nphi)
+    theta = np.linspace(0, np.pi, Ntheta)
+
+    # the regular (theta, phi) meshgrid to interpolate onto
+    phim, thetam = np.meshgrid(phi, theta, indexing='ij')
+
+    # converting t and p 
+    t = t * np.pi/180
+    p = p * np.pi/180
+
+    X = np.sin(t) * np.cos(p)
+    Y = np.sin(t) * np.sin(p)
+    Z = np.cos(t)
+
+    # unrotated original grid
+    r = np.array([X, Y, Z])
+
+    # finding the rotated grid
+    r_ = rotate_funcs.rotate_cartesian(r, 'derot', *betas)
+
+    # using astropy to get the latitude and longitude of the 
+    # rotated coordinate
+    X_, Y_, Z_ = r_
+    nanmask = v == 0.0
+    X_=X_.flatten()              #Flat input into 1d vector
+    x=list(X_[~nanmask])      #eliminate any NaN
+    Y_=Y_.flatten()
+    y=list(Y_[~nanmask])
+    Z_=Z_.flatten()
+    z=list(Z_[~nanmask])
+    # __, lat_, lon_ = coor.cartesian_to_spherical(X_, Y_, Z_)
+
+    # intepolation step
+    # logvdf_interp = CloughTocher2DInterpolator(points, v, fill_value=np.nan)
+    # logvdf_interp = Rbf(X_, Y_, Z_,  v, epsilon=0.25, smooth=0)
+
+    # query at new regular grid points
+    Xn = np.sin(thetam) * np.cos(phim)
+    Yn = np.sin(thetam) * np.sin(phim)
+    Zn = np.cos(thetam)
+
+    print((x,y,z))
+    print((Xn,Yn,Zn))
+    print(v)
+    print(v[~nanmask])
+
+    # logvdf_ = logvdf_interp(Xn, Yn, Zn)
+    logvdf_ = griddata((x,y,z), v[~nanmask], (Xn,Yn,Zn), method='linear')
+    print(logvdf_)
 
     return phim, thetam, logvdf_
 
@@ -179,6 +233,7 @@ for j in range(49, 50):
         # logvdf_flat = vv
         logvdf_flat[np.abs(logvdf_flat) == np.inf] = np.nan
         logvdf_flat[np.isnan(logvdf_flat)] = 0.0 #np.nanmin(logvdf_flat)
+        # logvdf_flat[logvdf_flat == 0.0] = np.nan #np.nanmin(logvdf_flat)
         
         idx = np.argmin(np.abs(phi_theta_cen[:,0] - E_idx))
         phi_cen = phi_theta_cen[idx,1]
@@ -191,6 +246,7 @@ for j in range(49, 50):
         betaz_arr = np.linspace(0, 360-phi_cen, 50)
 
         logvv_rot = interpolate_on_rotated_grid(phi_flat, theta_flat, logvdf_flat, [0, -betay_arr[j], betaz_arr[j]])
+        sys.exit()
 
         # setting negative values to nan
         logvv_rot[2][logvv_rot[2] < 0] = np.nan
