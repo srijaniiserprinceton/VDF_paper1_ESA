@@ -57,7 +57,7 @@ def create_gridspec():
 levels = np.linspace(0, 7, 10)
 
 # phi, theta centers from locate_axis.py
-phi_theta_cen = np.load('output_data_files/phi_theta_cen.npy')
+phi_theta_cen = np.load('output_data_files/phi_theta_cen_PSP.npy')
 
 def interpolate_on_rotated_grid(p, t, v, betas):
     Ntheta, Nphi = 101, 201
