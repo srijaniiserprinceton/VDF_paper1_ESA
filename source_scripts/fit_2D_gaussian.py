@@ -47,13 +47,13 @@ def scale_fitparams(fit_params, pp, tt):
     Nx, Ny = pp.shape
 
     # x is theta and y is phi
-    center_y = (center_y - Ny // 2) / Ny * 360 + 180
-    center_x = (center_x - Nx // 2) / Nx * 180 + 90
+    center_y = (center_y - Ny // 2) / Ny * 180 + 90
+    center_x = (center_x - Nx // 2) / Nx * 360 + 180
 
     # adjusting the widths
     width_xy = width_xy / Nx * 180
 
-    return height, center_y, center_x, width_xy
+    return height, center_x, center_y, width_xy
 
 
 def scale_fitparams_MMS(fit_params, pp, tt):

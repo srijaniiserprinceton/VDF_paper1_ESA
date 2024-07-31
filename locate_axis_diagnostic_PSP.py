@@ -50,7 +50,7 @@ def interpolate_vdf(pp, tt, vdf, Nphi= 201, Ntheta = 101):
     phi = np.linspace(0, 2*np.pi, Nphi) * 180 / np.pi
     theta = np.linspace(0, np.pi, Ntheta) * 180 / np.pi
 
-    phim, thetam = np.meshgrid(phi, theta)
+    phim, thetam = np.meshgrid(phi, theta, indexing='ij')
 
     phi_flat, theta_flat, vdf_flat = pp.flatten(), tt.flatten(), vdf.flatten()
 
@@ -73,20 +73,22 @@ if __name__=='__main__':
     Nrows, Ncols = 4, 8
 
     # the source file containing the VDF data
-    filename = './input_data_files/2022-02-27_Avg350s_VDFs.cdf'
+    # filename = './input_data_files/2022-02-27_Avg350s_VDFs.cdf'
+    filename = './input_data_files/2020-01-26_VDFs.cdf'
+    time_stamp = '2020-01-26'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
     # Each array should be in the shape of [Ntime, dim1, dim2, dim3]
     # where Ntime is the number of time stamps
     # dim1 is the phi dimension, dim2 is the energy, and dim3 is theta index
     # flipping the theta, Energy and phi dimensions to have them monotonically increasing
-    Energy = data.energy.data[:,::-1,::-1,::-1]
-    Theta = data.theta.data[:,::-1,::-1,::-1]
-    Phi = data.phi.data[:,::-1,::-1,::-1]
-    VDF = data.vdf.data[:,::-1,::-1,::-1]
+    Energy = data.energy.data[:,:,::-1,:]
+    Theta = data.theta.data[:,:,::-1,:]
+    Phi = data.phi.data[:,:,::-1,:]
+    VDF = data.vdf.data[:,:,::-1,:]
 
     # time index with a nice VDF realization
-    time_idx = 51
+    time_idx = 12359//10 # 51
 
     fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
 
@@ -96,20 +98,23 @@ if __name__=='__main__':
     # making list to store the gyroaxis locations for each shell
     phi_theta_cen = []
 
+    VDF[VDF == 0] = np.nan
+    VDF = VDF / np.nanmin(VDF)
+
     # making the diagnostic subplots
     for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
         # using try/except so that we can loop over the bad data shells
         try:
-            E = Energy[time_idx, :, E_idx, :][0, 0]
-            tt, pp, vv = Theta[time_idx, :, E_idx, :], Phi[time_idx, :, E_idx, :], VDF[time_idx, :, E_idx, :]
+            E = Energy[time_idx, E_idx, :, :][0, 0]
+            tt, pp, vv = Theta[time_idx, E_idx, :, :], Phi[time_idx, E_idx, :, :], VDF[time_idx, E_idx, :, :] 
 
             # changing the convention of theta from (-90, 90) to (0, 180)
-            tt = -(tt - 90)
+            tt = tt + 90
 
             # finding the row and the column of the subplots
             row, col = i//Ncols, i%Ncols
 
-            im = ax[row,col].contourf(pp, tt, np.log10(vv), cmap='rainbow', rasterized=True, levels=levels)
+            im = ax[row,col].contourf(pp, tt, np.log10(vv), cmap='rainbow', rasterized=True)# , levels=levels)
             ax[row,col].set_xlim([0,360])
             ax[row,col].set_ylim([0,180])
             ax[row,col].set_aspect('equal')
@@ -144,8 +149,8 @@ if __name__=='__main__':
     # plt.xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=16)
     # plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
 
-    plt.savefig('VDF_paper1_plots/locate_axis_diagnostic.pdf')
+    plt.savefig(f'VDF_paper1_plots/locate_axis_diagnostic_{time_stamp}.pdf')
 
     # saving the locations of the centers
     phi_theta_cen = np.asarray(phi_theta_cen)
-    np.save('output_data_files/phi_theta_cen_PSP.npy', phi_theta_cen)
+    np.save(f'output_data_files/phi_theta_cen_PSP_{time_stamp}.npy', phi_theta_cen)
