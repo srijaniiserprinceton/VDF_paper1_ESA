@@ -196,4 +196,4 @@ if __name__=='__main__':
     ax[1].set_xlabel(r'$\phi$ in degrees')
     ax[2].set_title(r'Normalized histogram of $\theta$ gyrocenter', fontsize=14)
     ax[2].set_xlabel(r'$\theta$ in degrees')
-    plt.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.96, wspace=0.1, hspace=0.25)
+    plt.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.96, wspace=0.3, hspace=0.3)
