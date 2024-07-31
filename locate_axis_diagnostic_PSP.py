@@ -11,6 +11,7 @@ import numpy as np
 from math import atan
 import spherepy as sp
 from scipy import interpolate
+from scipy.stats import norm
 from matplotlib import cm, colors
 import matplotlib.pyplot as plt
 from matplotlib import rc
@@ -83,7 +84,7 @@ if __name__=='__main__':
     # dim1 is the phi dimension, dim2 is the energy, and dim3 is theta index
     # flipping the theta, Energy and phi dimensions to have them monotonically increasing
     Energy = data.energy.data[:,:,::-1,:]
-    Theta = data.theta.data[:,:,::-1,:]
+    Theta = data.theta.data[:,:,::-1,:] + 90
     Phi = data.phi.data[:,:,::-1,:]
     VDF = data.vdf.data[:,:,::-1,:]
 
@@ -108,8 +109,8 @@ if __name__=='__main__':
             E = Energy[time_idx, E_idx, :, :][0, 0]
             tt, pp, vv = Theta[time_idx, E_idx, :, :], Phi[time_idx, E_idx, :, :], VDF[time_idx, E_idx, :, :] 
 
-            # changing the convention of theta from (-90, 90) to (0, 180)
-            tt = tt + 90
+            # the number of bins which are non-zero in an energy shell
+            Ncount = np.sum(~np.isnan(vv)) / len(vv.flatten())
 
             # finding the row and the column of the subplots
             row, col = i//Ncols, i%Ncols
@@ -118,7 +119,7 @@ if __name__=='__main__':
             ax[row,col].set_xlim([90,180])
             ax[row,col].set_ylim([30,150])
             ax[row,col].set_aspect('equal')
-            ax[row,col].set_title(f'E = {E:.2f} [eV]')
+            # ax[row,col].set_title(f'E = {E:.2f} [eV]')
             ax[row,col].set_aspect('equal')
 
             # get vv in the theta-phi grid after interpolating
@@ -135,14 +136,40 @@ if __name__=='__main__':
             ax[row,col].contour(pp, tt, gauss, colors='k', linestyles='dashed', linewidths=1, alpha=0.5, levels=5)
             ax[row,col].text(0.99, 0.95, f'({fit_params[1]:.2f}, {fit_params[2]:.2f})', transform=ax[row,col].transAxes,
                             va='top', ha='right', color='blue')
+            ax[row,col].text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax[row,col].transAxes,
+                            va='bottom', ha='left', color='red', fontweight='bold')
             ax[row,col].plot(fit_params[1], fit_params[2], 'xk')
 
             # appending the located centers
-            phi_theta_cen.append([E_idx, fit_params[1], fit_params[2]])
+            phi_theta_cen.append([E, Ncount, fit_params[1], fit_params[2]])
 
         except: continue
 
-    plt.subplots_adjust(top=0.99, bottom=0.01, left=0.03, right=0.99, wspace=0.05, hspace=0.05)
+    # saving the locations of the centers
+    phi_theta_cen = np.asarray(phi_theta_cen)
+    np.save(f'output_data_files/phi_theta_cen_PSP_{time_stamp}.npy', phi_theta_cen)
+
+    # removing the shells with less than 0.5 counts of the max
+    weight_mask = phi_theta_cen[:,1] / np.max(phi_theta_cen[:,1]) >= 0.7
+
+    phi_theta_cen_purged = []
+    for i in range(len(phi_theta_cen)):
+        if(weight_mask[i] == False): continue
+        phi_theta_cen_purged.append(phi_theta_cen[i])
+    phi_theta_cen_purged = np.asarray(phi_theta_cen_purged)
+
+    # finding the effective centroid across shells
+    (mu_phi, sig_phi) = norm.fit(phi_theta_cen_purged[:,2])
+    (mu_theta, sig_theta) = norm.fit(phi_theta_cen_purged[:,3])
+
+    # plotting the effective centroid in all shells
+    for axs in ax.flatten():
+        axs.scatter(mu_phi, mu_theta, marker='o', color='white')
+
+    # making a plot of the histograms in theta and phi with weights built from the count of each shell
+    hist_weights = (phi_theta_cen_purged[:,1] / np.max(phi_theta_cen_purged[:,1]))**2
+
+    plt.subplots_adjust(top=0.96, bottom=0.05, left=0.03, right=0.99, wspace=0.05, hspace=0.05)
     # to put common x and y labels
     fig.add_subplot(111, frameon=False)
     plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
@@ -151,6 +178,22 @@ if __name__=='__main__':
 
     plt.savefig(f'VDF_paper1_plots/locate_axis_diagnostic_{time_stamp}.pdf')
 
-    # saving the locations of the centers
-    phi_theta_cen = np.asarray(phi_theta_cen)
-    np.save(f'output_data_files/phi_theta_cen_PSP_{time_stamp}.npy', phi_theta_cen)
+    # plotting the histograms
+    fig, ax = plt.subplots(1,3,figsize=(15,8))
+
+    ax[0].semilogx(phi_theta_cen[:,0], phi_theta_cen[:,1], 'ok')
+    ax[0].set_ylabel('Count fraction')
+    ax[0].set_xlabel('Energy [eV]')
+
+    __, bins_phi, __ = ax[1].hist(phi_theta_cen_purged[:,2], bins=7, weights=hist_weights, density=True)
+    __, bins_theta, __ = ax[2].hist(phi_theta_cen_purged[:,3], bins=7, weights=hist_weights, density=True)
+
+    y_phi = norm.pdf(bins_phi, mu_phi, sig_phi)
+    y_theta = norm.pdf(bins_theta, mu_theta, sig_theta)
+    ax[1].plot(bins_phi, y_phi, '--', linewidth=2)
+    ax[2].plot(bins_theta, y_theta, '--', linewidth=2)
+    ax[1].set_title(r'Normalized histogram of $\phi$ gyrocenter', fontsize=14)
+    ax[1].set_xlabel(r'$\phi$ in degrees')
+    ax[2].set_title(r'Normalized histogram of $\theta$ gyrocenter', fontsize=14)
+    ax[2].set_xlabel(r'$\theta$ in degrees')
+    plt.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.96, wspace=0.1, hspace=0.25)
