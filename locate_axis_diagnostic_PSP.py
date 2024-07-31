@@ -88,7 +88,7 @@ if __name__=='__main__':
     VDF = data.vdf.data[:,:,::-1,:]
 
     # time index with a nice VDF realization
-    time_idx = 12359//10 # 51
+    time_idx = 12359//5 # 51
 
     fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
 
@@ -114,9 +114,9 @@ if __name__=='__main__':
             # finding the row and the column of the subplots
             row, col = i//Ncols, i%Ncols
 
-            im = ax[row,col].contourf(pp, tt, np.log10(vv), cmap='rainbow', rasterized=True)# , levels=levels)
-            ax[row,col].set_xlim([0,360])
-            ax[row,col].set_ylim([0,180])
+            im = ax[row,col].pcolormesh(pp, tt, np.log10(vv), cmap='rainbow', rasterized=True)# , levels=levels)
+            ax[row,col].set_xlim([90,180])
+            ax[row,col].set_ylim([30,150])
             ax[row,col].set_aspect('equal')
             ax[row,col].set_title(f'E = {E:.2f} [eV]')
             ax[row,col].set_aspect('equal')
