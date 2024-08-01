@@ -89,7 +89,7 @@ if __name__=='__main__':
     VDF = data.vdf.data[:,:,::-1,:]
 
     # time index with a nice VDF realization
-    time_idx = 12359//5 # 51
+    time_idx = 12359//10 # 51
 
     fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
 
