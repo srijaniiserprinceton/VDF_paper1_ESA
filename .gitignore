@@ -3,4 +3,5 @@
 *.cdf
 .DS_Store
 *.npy
+*.mat
 __pycache__
