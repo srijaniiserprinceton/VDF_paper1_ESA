@@ -12,6 +12,7 @@ from math import atan
 import spherepy as sp
 from scipy import interpolate
 from scipy.stats import norm
+from scipy.io import savemat
 from matplotlib import cm, colors
 import matplotlib.pyplot as plt
 from matplotlib import rc
@@ -20,6 +21,7 @@ font = {'size'   : 12}
 rc('font', **font)
 
 from source_scripts import fit_2D_gaussian as fit_gauss
+from source_scripts import sph2slep
 
 def interpolate_vdf(pp, tt, vdf, Nphi= 201, Ntheta = 101):
     '''
@@ -115,7 +117,7 @@ if __name__=='__main__':
             # finding the row and the column of the subplots
             row, col = i//Ncols, i%Ncols
 
-            im = ax[row,col].pcolormesh(pp, tt, np.log10(vv), cmap='rainbow', rasterized=True)# , levels=levels)
+            im = ax[row,col].pcolormesh(pp, tt, np.log10(vv), cmap='BuPu', rasterized=True)# , levels=levels)
             ax[row,col].set_xlim([90,180])
             ax[row,col].set_ylim([30,150])
             ax[row,col].set_aspect('equal')
@@ -162,9 +164,15 @@ if __name__=='__main__':
     (mu_phi, sig_phi) = norm.fit(phi_theta_cen_purged[:,2])
     (mu_theta, sig_theta) = norm.fit(phi_theta_cen_purged[:,3])
 
+    # making the polar cap extent in degrees
+    TH = 45
+    clock_angle = np.linspace(0, 2 * np.pi, 100)
+    x_cap, y_cap = mu_phi + TH * np.cos(clock_angle), mu_theta + TH * np.sin(clock_angle)
+
     # plotting the effective centroid in all shells
     for axs in ax.flatten():
         axs.scatter(mu_phi, mu_theta, marker='o', color='white')
+        axs.plot(x_cap, y_cap, '--r')
 
     # making a plot of the histograms in theta and phi with weights built from the count of each shell
     hist_weights = (phi_theta_cen_purged[:,1] / np.max(phi_theta_cen_purged[:,1]))**2
@@ -197,3 +205,43 @@ if __name__=='__main__':
     ax[2].set_title(r'Normalized histogram of $\theta$ gyrocenter', fontsize=14)
     ax[2].set_xlabel(r'$\theta$ in degrees')
     plt.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.96, wspace=0.3, hspace=0.3)
+
+    # generating the theta and phi grid for Slepian generation
+    phi_Slepian, theta_Slepian = sph2slep.get_Slepian_grid(Phi[0,0,:,0], Theta[0,0,0])
+    # reversing the order of theta_Slepian since the matlab code wants latitude from [90,-90]
+    theta_Slepian = 90 - theta_Slepian
+    pp_Slep, tt_Slep = np.meshgrid(phi_Slepian, theta_Slepian, indexing='ij')
+    pp_Slep_flat, tt_Slep_flat = pp_Slep.flatten(), tt_Slep.flatten()
+
+    Nphi, Ntheta = pp_Slep.shape
+
+    # saving these files as matlab readable arrays
+    fname = 'PSP_slepgen_data'
+    save_odd_grid = True
+
+    if(save_odd_grid):
+        # geneating an odd grid using interpolation
+        phi_grid_odd = np.linspace(phi_Slepian.min(), phi_Slepian.max(), Nphi + 1)
+        theta_grid_odd = np.linspace(theta_Slepian.min(), theta_Slepian.max(), Ntheta + 1)[::-1] # since it goes from 90 -> -90
+        pp_Slep, tt_Slep = np.meshgrid(phi_grid_odd, theta_grid_odd, indexing='ij')
+        pp_Slep_flat, tt_Slep_flat = pp_Slep.flatten(), tt_Slep.flatten()
+        Nphi, Ntheta = pp_Slep.shape
+
+    mdict = {'phi0': mu_phi, 'theta0': mu_theta, 'cap_extent': 45, 'phi_grid': pp_Slep_flat,
+            'theta_grid': tt_Slep_flat, 'Nphi': Nphi, 'Ntheta': Ntheta}
+    savemat(f'./input_data_files/Slepian_functions/{fname}.mat', mdict)
+
+    # making a higher density theta phi grid
+    phi_Slepian, theta_Slepian = np.linspace(0, 360, 361), np.linspace(0, 180, 181)
+    # reversing the order of theta_Slepian since the matlab code wants latitude from [90,-90]
+    theta_Slepian = 90 - theta_Slepian
+    pp_Slep, tt_Slep = np.meshgrid(phi_Slepian, theta_Slepian, indexing='ij')
+    pp_Slep_flat, tt_Slep_flat = pp_Slep.flatten(), tt_Slep.flatten()
+
+    Nphi, Ntheta = pp_Slep.shape
+
+    # saving these files as matlab readable arrays
+    fname = 'PSP_slepgen_data'
+    mdict = {'phi0': mu_phi, 'theta0': mu_theta, 'cap_extent': 45, 'phi_grid': pp_Slep_flat,
+             'theta_grid': tt_Slep_flat, 'Nphi': Nphi, 'Ntheta': Ntheta}
+    savemat(f'./input_data_files/Slepian_functions/{fname}_highres.mat', mdict)

@@ -6,6 +6,8 @@ class sph2slep:
         self.G = Slep_dict['G_slep']
         self.V = Slep_dict['V']
         self.N = Slep_dict['N']
+        self.EL = Slep_dict['EL']
+        self.EM = Slep_dict['EM']
         self.ell_arr = Slep_dict['EL'].astype('int')
         self.m_arr = Slep_dict['EM'].astype('int')
         self.Lmax = int(np.max(self.ell_arr))
@@ -14,67 +16,35 @@ class sph2slep:
         sortidx = np.argsort(self.V)[::-1]
         self.G = self.G[sortidx]
         self.V = self.V[sortidx]
+        self.EL = self.EL[sortidx]
+        self.EM = self.EM[sortidx]
 
-    def get_spherepy_coefs(self, alpha):
-        # initializing the spherepy coefficient object with zeros
-        coefs = sp.zeros_coefs(nmax=self.Lmax, mmax=self.Lmax)
+def get_Slepian_grid(phi_ESA, theta_ESA):
+    # trying to find the average spacing of the grids
+    phi_diff_avg = np.mean(np.diff(phi_ESA))
+    theta_diff_avg = np.mean(np.diff(theta_ESA))
 
-        # looping over the ell and m to fill in the coefficients
-        for sph_idx in range(len(self.ell_arr)):
-            ell, m = self.ell_arr[sph_idx], self.m_arr[sph_idx]
-            coefs[int(ell), int(m)] = self.Glm_alpha[sph_idx, alpha]
-        return coefs
+    # now building the adjacent grids in phi: (0, phi_min) + (phi_max, 180)
+    num_phi_before = int(phi_ESA[0] / phi_diff_avg) + 1
+    phi_before = np.linspace(0, phi_ESA[0], num_phi_before)
 
-    def get_slep(self, Ntheta, Nphi):
-        # the array to store the Slepian functions 
-        G_sleps = np.zeros((self.Nsleps, Ntheta, Nphi))
-        Lmax = np.max(self.ell_arr)
-        Y_real = self.get_real_sph(Ntheta, Nphi).real
+    num_phi_after = int((360 - phi_ESA[-1]) / phi_diff_avg) + 1
+    phi_after = np.linspace(phi_ESA[-1], 360, num_phi_after)
 
-        # moving the axis of Y_real to facilitate matrix product
-        Y_real = np.moveaxis(Y_real, 0, 1)
+    phi_Slepian = np.append(phi_before[:-1], phi_ESA)
+    phi_Slepian = np.append(phi_Slepian, phi_after[1:])
 
-        # looping over different Slepian functions
-        for alpha in range(self.Nsleps):
-            G_sleps[alpha] = self.Glm_alpha[:,alpha] @ Y_real
-            # coefs_alpha = self.get_spherepy_coefs(alpha)
-            # G_sleps[alpha] = sp.ispht(coefs_alpha, nrows=Ntheta, ncols=Nphi).array
-        
-        # reordering according to eigenvalues
-        sort_idx = np.argsort(self.V)[::-1]
-        V_ordered = self.V[sort_idx]
-        G_ordered = G_sleps[sort_idx]
+    # now building the adjacent grids in theta: (0, theta_min) + (theta_max, 180)
+    num_theta_before = int(theta_ESA[0] / theta_diff_avg) + 1
+    theta_before = np.linspace(0, theta_ESA[0], num_theta_before)
 
-        return G_ordered, V_ordered
+    num_theta_after = int((180 - theta_ESA[-1]) / theta_diff_avg) + 1
+    theta_after = np.linspace(theta_ESA[-1], 180, num_theta_after)
 
-    def get_real_sph(self, Ntheta, Nphi):
-        # creating the array for storing complex spherical harmonics
-        sph_real = np.zeros((self.Nsleps, Ntheta, Nphi), dtype='complex128')
+    theta_Slepian = np.append(theta_before[:-1], theta_ESA)
+    theta_Slepian = np.append(theta_Slepian, theta_after[1:])
 
-        # first constructing the complex spherical harmonics
-        # making it in the form of a dictionary
-        Y = {}
-        for sph_idx in range(self.Nsleps):
-            coefs_arr = sp.zeros_coefs(nmax=self.Lmax, mmax=self.Lmax)
-            ell, m = self.ell_arr[sph_idx], self.m_arr[sph_idx]
-            coefs_arr[int(ell), int(m)] = 1.0
-            Y[f'{ell},{m}'] = sp.ispht(coefs_arr, ncols=Nphi, nrows=Ntheta).array
-        
-
-        for sph_idx in range(self.Nsleps):
-            ell, m = self.ell_arr[sph_idx], self.m_arr[sph_idx]
-            if(m < 0):
-                sph_real[sph_idx] = 1j/np.sqrt(2) *\
-                                    (Y[f'{ell},{m}'] - np.power(-1, np.abs(m)) * Y[f'{ell},{-m}'])
-            elif(m == 0):
-                sph_real[sph_idx] = Y[f'{ell},{m}']
-            else:
-                sph_real[sph_idx] = 1/np.sqrt(2) *\
-                                    (Y[f'{ell},{-m}'] + np.power(-1, np.abs(m)) * Y[f'{ell},{m}'])
-            
-        return sph_real
-
-                                
+    return phi_Slepian, theta_Slepian
 
 
 
