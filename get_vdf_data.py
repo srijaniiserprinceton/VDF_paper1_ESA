@@ -1,14 +1,11 @@
 import sys, os
 import numpy as np
 import xarray as xr
-
 import pyspedas
 import cdflib
 
-
-
 def _get_psp_vdf(trange, CREDENTIALS=None):
-    """
+    '''
     Get and download the latest version of the MMS data. 
 
     Parameters:
@@ -23,7 +20,7 @@ def _get_psp_vdf(trange, CREDENTIALS=None):
 
     TODO : Add check if file is already downloaded and use local file.
     TODO : Replace with a cdaweb or wget download procedure.
-    """
+    '''
 
     if CREDENTIALS:
         files = pyspedas.psp.spi(trange, datatype='spi_sf00', level='L2', notplot=True, time_clip=True, downloadonly=True, last_version=True, username=CREDENTIALS[0], password=CREDENTIALS[1])
@@ -33,7 +30,7 @@ def _get_psp_vdf(trange, CREDENTIALS=None):
     return(files)
 
 def init_psp_vdf(filename):
-    """
+    '''
     Parameters:
     -----------
     filename : list containing the files that are going to be loaded in.
@@ -43,7 +40,7 @@ def init_psp_vdf(filename):
     vdf_ds : xarray dataset containing the key VDF parameters from the given filename.
     
     NOTE: This will only load in a single day of data.
-    """
+    '''
     # Constants
     mass_p = 0.010438870        # eV/(km^2/s^2)
     charge_p = 1
@@ -114,6 +111,18 @@ def init_psp_vdf(filename):
     return(xr_ds)
 
 def save_vdf_data(trange, SPACECRAFT='PSP', CREDENTIALS=None):
+    '''
+    Saving VDF data in streamlined format to be used in the rest of the workflow.
+
+    Parameters:
+    -----------
+    trange: string
+            Time range in [tstart, tend] format where timestamps are 'YYYY-MM-DDThh:mm:ss'.
+    SPACECRAFT: string 
+                Name of the spacecraft whose ESA measurement we want.
+    CREDENTIALS: Tuple of strings ['<username>', '<password>']
+                 User credentials in the above format for unrealeased data.
+    '''
     files   = _get_psp_vdf(trange, CREDENTIALS=CREDENTIALS)
     dataset = init_psp_vdf(files[0])
 
@@ -123,11 +132,12 @@ def save_vdf_data(trange, SPACECRAFT='PSP', CREDENTIALS=None):
 if __name__ == "__main__":
     # This is where the tests are going to be performed
     target = '2020-01-26T14:10:42'
-
     tstart = '2020-01-26T00:00:00'
     tend   = '2020-01-26T23:00:00'
 
+    # making the trange tuple
     trange = [tstart, tend]
 
+    # saving the .cdf file with the formatted VDF from desired time interval
     save_vdf_data(trange)
 
