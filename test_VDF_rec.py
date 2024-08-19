@@ -267,10 +267,11 @@ XY_curve = interpolate_points(XY_pts)
 ax.plot(XY_curve[:,0], XY_curve[:,1], 'r')
 '''
 
-VDF_2D_GF = ndimage.gaussian_filter(VDF_2D, sigma=3.0, order=0)
+VDF_2D_GF = ndimage.gaussian_filter(VDF_2D, sigma=5.0, order=0)
 
 plt.figure()
-img = plt.contourf(V1, V2, VDF_2D_GF, cmap='gnuplot2', vmin=-1e-3, vmax=6, levels=[1.0, 6.0])
+# img = plt.contourf(V1, V2, VDF_2D_GF, cmap='gnuplot2', vmin=-1e-6, vmax=6, levels=[1.0, 6.0])
+img = plt.contourf(V1, V2, VDF_2D, cmap='gnuplot2', vmin=-1e-6, vmax=6, levels=[1.0, 6.0])
 plt.close()
 p = img.collections[0].get_paths()[0]
 v = p.vertices
@@ -280,7 +281,9 @@ y = v[:,1]
 ax.plot(x, y, color='white')
 
 # performing the 2D GMM on the VDF
-gmm = fit_2D_gaussian.GMM_on_VDF(VDF_2D_GF, n_populations=1, Nsamples=int(1e5), plot_GMM=True)
+VDF_2D_GF[:,:25] = 0.0
+VDF_2D_GF[:,150:] = 0.0
+gmm = fit_2D_gaussian.GMM_on_VDF(VDF_2D_GF, n_populations=2, Nsamples=int(1e5), plot_GMM=True)
 
 # storing the contour
 curve2storeXY = {'X': v.T[0], 'Y': v.T[1]}
@@ -289,4 +292,9 @@ savemat('XY_pts.mat', curve2storeXY)
 # storing the evaluation points
 evalpts2storeXY = {'XP': np.ravel(V1,'F'), 'YP': np.ravel(V2,'F')}
 savemat('XYP.mat', evalpts2storeXY)
+
+# saving the 2D VDF and domain points
+np.save('output_data_files/VDF_2D.npy', VDF_2D)
+np.save('output_data_files/V1.npy', V1)
+np.save('output_data_files/V2.npy', V2)
 

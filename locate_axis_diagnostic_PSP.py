@@ -1,8 +1,10 @@
 '''
+---------------------------------------------------------------------------
 This is the first script that should be run so that we know the range of
 energy shells that contain valid data. Use the visual results from the 
 diagnostic plot to find E_idx_min and E_idx_max for making histogram plots
 to find the effect axis of gyrotropy.
+---------------------------------------------------------------------------
 '''
 
 # import statements
@@ -20,6 +22,7 @@ plt.ion()
 font = {'size'   : 12}
 rc('font', **font)
 
+# imports from our custom package
 from source_scripts import fit_2D_gaussian as fit_gauss
 from source_scripts import sph2slep
 
@@ -72,7 +75,10 @@ def interpolate_vdf(pp, tt, vdf, Nphi= 201, Ntheta = 101):
 if __name__=='__main__':
     '''
     Replace Nrows and Ncols such that they multiply to give total number of shells
+    OR the total number of subplot panels where we want to plot the energy shells.
     '''
+
+    # default: 32 shell convention
     Nrows, Ncols = 4, 8
 
     # the source file containing the VDF data
