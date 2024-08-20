@@ -13,42 +13,30 @@ import generate_2D_contour as gen_contour
 slep_idx = 3
 Lmax = 12
 
+#-------------reading the low resolution Slepian basis functions------------------#
 Slep_fname = f'glmalphapto-45-{Lmax}-1.738618e+02-9.230719e+01-0_lowres.mat'
 # Slep_fname = f'glmalphapto-45-{Lmax}-8.386185e+01--9.230719e+01-0.mat'
 Slepian_dict = mat73.loadmat(f'./input_data_files/Slepian_functions/{Slep_fname}')
 lon_lr, lat_lr = Slepian_dict['lon'], Slepian_dict['lat']
-
 G_lr = Slepian_dict['G_slep']
-# G = np.roll(Slepian_dict['G_slep'], (-16), axis=1)
 
-# plotting the high res basis
+# plotting the low resolution basis
 fig, ax = plt.subplots(1, 2, figsize=(10,6))
 ax[0].pcolormesh(lon_lr, lat_lr, G_lr[slep_idx], cmap='seismic')
 ax[0].set_aspect('equal')
 
+#-------------reading the high resolution Slepian basis functions-----------------#
 Slep_fname = f'glmalphapto-45-{Lmax}-1.738618e+02-9.230719e+01-0_highres.mat'
 # Slep_fname = 'glmalphapto-45-20-8.386185e+01--9.230719e+01-0.mat'
 Slepian_dict = mat73.loadmat(f'./input_data_files/Slepian_functions/{Slep_fname}')
 lon_hr, lat_hr = Slepian_dict['lon'], Slepian_dict['lat']
-
 G_hr = Slepian_dict['G_slep']
-# G = np.roll(Slepian_dict['G_slep'], (180, 90), axis=(2,1))
 
+# plotting the high resolution basis
 ax[1].pcolormesh(lon_hr, lat_hr, G_hr[slep_idx], cmap='seismic')
 ax[1].set_aspect('equal')
 
-'''
-# generating random coefficients
-Slep_coefs = np.random.rand(441)
-
-# setting some to zero randomly
-rand_idx = np.random.randint(50, size=10)
-Slep_coefs[rand_idx] = 0.0
-
-# loweres image 
-img_lr = np.dot(np.moveaxis(G_lr, 0, -1), Slep_coefs)
-# img_lr[:,14:] = np.nan
-'''
+#--------------reading the VDF data for a certain time interval---------------------#
 filename = './input_data_files/2020-01-26_VDFs.cdf'
 time_stamp = '2020-01-26'
 data = cdflib.cdf_to_xarray(filename, to_datetime=True)
@@ -63,12 +51,15 @@ Phi = data.phi.data[:,:,::-1,:]
 VDF = data.vdf.data[:,:,::-1,:]
 zeros_mask = VDF == 0.0
 VDF = VDF / np.nanmin(VDF[~zeros_mask])
-VDF[zeros_mask] = 1e0 #np.nan
-time_idx, E_idx = -1, 15 #12359//5, 15
+VDF[zeros_mask] = 1e0
+E_idx = 15
+
+time_idx = -1
+
 vv = VDF[time_idx, E_idx, :, :] 
-# vv[0,0] = 1e0
 data_vv = np.log10(vv)
 data = np.zeros((13, 33)) + np.nan
+# tiling the SPAN-Ai data in the correct location
 data[2:10, 8:16] = data_vv.T
 img_lr = data
 
@@ -79,11 +70,6 @@ img_lr[:, 15] = np.nan
 pp, tt = np.meshgrid(Phi[time_idx, E_idx, 0, :], Theta[time_idx, E_idx, :, 0])
 # img_lr = griddata((pp.flatten(), tt.flatten()), data.flatten(), (lon_lr, lat_lr))
 
-'''
-# highres image
-img_hr = np.dot(np.moveaxis(G_hr, 0, -1), Slep_coefs)
-'''
-
 vmin, vmax = np.nanmin(img_lr), np.nanmax(img_lr)
 
 # plotting
@@ -91,19 +77,6 @@ fig, ax = plt.subplots(2, 2, figsize=(10,6))
 ax[0,0].pcolormesh(lon_lr, lat_lr, img_lr, cmap='seismic', vmin=vmin, vmax=vmax, rasterized=True)
 ax[0,0].set_aspect('equal')
 ax[0,0].set_title('Coarse-grid image from true coeffs')
-'''
-ax[0,1].pcolormesh(lon_hr, lat_hr, img_hr, cmap='seismic', vmin=vmin, vmax=vmax, rasterized=True)
-ax[0,1].set_aspect('equal')
-ax[0,1].set_title('Fine-grid image from true coeffs')
-# ax[0,1].axvline(158, ls='dashed', color='k')
-'''
-
-'''
-# making a downsampling
-img_lr_interp = griddata((lon_hr.flatten(), lat_hr.flatten()), img_hr.flatten(), (lon_lr, lat_lr))
-ax[2].pcolormesh(lon_lr, lat_lr, img_lr_interp, cmap='seismic')
-ax[2].set_aspect('equal')
-'''
 
 # generating coefficients from coarse grid structure on the coarse grid Slepians
 nan_mask_lr = np.isnan(img_lr)
@@ -125,28 +98,6 @@ ax[1,0].pcolormesh(lon_lr, lat_lr, img_from_coeffs_lr_1, cmap='seismic', vmin=vm
 ax[1,0].set_aspect('equal')
 
 coeffs_lr = coeffs_lr_1
-
-'''
-# generating coefficients from fine grid structure on the fine grid Slepians
-nan_mask_hr = np.isnan(img_hr)
-G_nonan_hr = G_hr[:,~nan_mask_hr]
-M_hr = G_nonan_hr @ G_nonan_hr.T 
-__, S_hr, __ = np.linalg.svd(M_hr)
-I_hr = np.identity(M_hr.shape[0])
-coeffs_hr = np.linalg.inv(G_nonan_hr @ G_nonan_hr.T +  np.max(S_hr) * 1e-12 * I_hr) @ G_nonan_hr @ img_hr[~nan_mask_hr]
-
-
-# comparing the coefficients
-ax[1,0].plot(Slep_coefs, 'ok', label='True coefs')
-ax[1,0].plot(Slep_coefs, 'k', label='True coefs', alpha=0.5)
-ax[1,0].plot(coeffs_lr, 'xr', label='Coarse coefs')
-ax[1,0].plot(coeffs_lr, '--r', label='Coarse coefs', alpha=0.5)
-ax[1,0].plot(coeffs_hr, 'xb', label='Fine coefs')
-ax[1,0].plot(coeffs_hr, '-.b', label='Fine coefs', alpha=0.5)
-ax[1,0].set_xlim([0, 50])
-ax[1,0].legend()
-'''
-
 
 # making the fine grid structure from coarse grid coefficients
 fine_from_coarsecoefs = np.dot(np.moveaxis(G_hr, 0, -1), coeffs_lr)
@@ -175,16 +126,20 @@ tt_hr_idx, pp_hr_idx = np.meshgrid(np.linspace(0, 180, 181), np.linspace(0, 360,
 VDF_2D = np.zeros((32, 181))
 
 fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)
+
+# looping over energy shells -> fitting polar Slepians -> plotting the reconstructed energy shell VDFs
 for E_idx in range(0, 32):
     E = Energy[time_idx, E_idx, 0, 0]
     vv = VDF[time_idx, E_idx, :, :] 
     data_vv = np.log10(vv)
     data = np.zeros((13, 33)) + np.nan
+    # tiling the SPAN-Ai data in the correct location
     data[2:10, 8:16] = data_vv.T
 
-    # interpolating the data
+    # interpolating the data to higher resolution before fitting polar Slepians
     img_hr = griddata((tt_lr_idx.flatten(), pp_lr_idx.flatten()), data.flatten(), (tt_hr_idx, pp_hr_idx), method='linear')
 
+    # fitting the polar Slepians
     nan_mask_hr = np.isnan(img_hr)
     G_nonan_hr = G_hr[:,~nan_mask_hr]
     M_hr = G_nonan_hr @ G_nonan_hr.T 
@@ -192,6 +147,7 @@ for E_idx in range(0, 32):
     I_hr = np.identity(M_hr.shape[0])
     coeffs_hr = np.linalg.inv(G_nonan_hr @ G_nonan_hr.T +  0.0 * I_hr) @ G_nonan_hr @ img_hr[~nan_mask_hr]
 
+    # reconstructing from the polar Slepians and plotting
     fine_from_finecoefs = np.dot(np.moveaxis(G_hr, 0, -1), coeffs_hr)
     ax[E_idx//8, E_idx%8].pcolormesh(lon_hr, lat_hr, fine_from_finecoefs, cmap='seismic', vmin=vmin, vmax=vmax, rasterized=True)
     ax[E_idx//8, E_idx%8].set_aspect('equal')
@@ -205,7 +161,6 @@ for E_idx in range(0, 32):
 
 
 plt.subplots_adjust(top=0.96, bottom=0.05, left=0.03, right=0.99, wspace=0.05, hspace=0.05)
-# to put common x and y labels
 fig.add_subplot(111, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 
@@ -219,12 +174,13 @@ V1 = vmag[:, np.newaxis] * np.cos(theta_hr[np.newaxis,:] * np.pi/180)
 V2 = vmag[:, np.newaxis] * np.sin(theta_hr[np.newaxis:,] * np.pi/180)
 
 fig, ax = plt.subplots(1,1)
-# plt.pcolormesh(V1, V2, VDF_2D)
 ax.contourf(V1, V2, VDF_2D, cmap='gnuplot2', vmin=-1e-3, vmax=6)
-# plt.scatter(V1, V2, c=VDF_2D, s=1)
 ax.set_aspect('equal')
 
-# drawing a contour on the 2D VDF
+# applying Gaussian filter on the 2D VDF
+VDF_2D_GF = ndimage.gaussian_filter(VDF_2D, sigma=5.0, order=0)
+
+# method I of getting the contour 
 '''
 plt.figure()
 img = plt.contourf(V1, V2, VDF_2D, cmap='gnuplot2', vmin=-1e-3, vmax=6, levels=[1.0, 6.0])
@@ -235,41 +191,7 @@ x = v[:,0]
 y = v[:,1]
 '''
 
-# ax.plot(x, y, color='white')
-
-def interpolate_points(contour_pts, isSpectral=False):
-    # making it a closed loop
-    contour_pts = np.vstack((contour_pts, contour_pts[0]))
-
-    # Linear length along the line:
-    distance = np.cumsum(np.sqrt(np.sum(np.diff(contour_pts, axis=0)**2, axis=1)))
-    distance = np.insert(distance, 0, 0)/distance[-1]
-
-    # Interpolation for different methods:
-    alpha = np.linspace(0, 1, 175)
-
-    interpolator =  interp1d(distance, contour_pts, kind='cubic', axis=0)
-    interpolated_points = interpolator(alpha)
-
-    # making the contour in the positive half-space if spectral contour
-    if(isSpectral):
-        positive_y_mask = interpolated_points[:,1] < 0
-        # interpolated_points[positive_y_mask,1] = 0.0
-        interpolated_points = interpolated_points[~positive_y_mask]
-
-    return interpolated_points
-
-'''
-XY_pts = list(zip(x, y))
-# removing the last point to avoid duplicate
-XY_pts = XY_pts[:-1]
-XY_curve = interpolate_points(XY_pts)
-
-ax.plot(XY_curve[:,0], XY_curve[:,1], 'r')
-'''
-
-VDF_2D_GF = ndimage.gaussian_filter(VDF_2D, sigma=5.0, order=0)
-
+# method II of getting the contour
 '''
 plt.figure()
 # img = plt.contourf(V1, V2, VDF_2D_GF, cmap='gnuplot2', vmin=-1e-6, vmax=6, levels=[1.0, 6.0])
@@ -280,6 +202,9 @@ v = p.vertices
 x = v[:,0]
 y = v[:,1]
 '''
+
+# method III of getting the contour
+
 # setting up the grid and interpolating to compare the fitting with
 x, y = np.ravel(V1, 'F'), np.ravel(V2, 'F')
 z = np.ravel(VDF_2D, 'F')
@@ -290,6 +215,7 @@ Z = griddata((x, y), z, (X, Y), method='linear', fill_value=0)
 
 #  setting up the model and indicating independent variables
 gencontourdemo = gen_contour.gen_contour(z, x, y, 'Gaussian_ycentered')
+
 
 # fitting the model with the data
 result = gencontourdemo.fit_2D_VDF()
