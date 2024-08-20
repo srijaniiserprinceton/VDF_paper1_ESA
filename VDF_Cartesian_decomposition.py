@@ -14,7 +14,7 @@ Slepian_dict = mat73.loadmat(f'../../../Codes/Helioseismology/Slepians/Slepian_G
 G, H, V, K, XYP, XY = Slepian_dict['G'], Slepian_dict['H'], Slepian_dict['V'],\
                       Slepian_dict['K'], Slepian_dict['XYP'], Slepian_dict['XY']
 
-G = H * 1.0
+# G = H * 1.0
 
 # locating the Shannon number
 Nshannon = np.argmin(np.abs(V-0.5))
@@ -79,7 +79,7 @@ G_nonan = G[~nan_mask,:]
 M = G_nonan.T @ G_nonan
 __, S, __ = np.linalg.svd(M)
 I = np.identity(M.shape[0])
-coeffs = np.linalg.inv(M +  S.max() * 1e-5 * I) @ G_nonan.T @ VDF_interp[~nan_mask]
+coeffs = np.linalg.inv(M +  S.max() * 1e-4 * I) @ G_nonan.T @ VDF_interp[~nan_mask]
 # coeffs = np.linalg.pinv(M, rcond=1e-5) @ G_nonan.T @ VDF_interp[~nan_mask]
 VDF_Sleprec = np.dot(G, coeffs)
 
