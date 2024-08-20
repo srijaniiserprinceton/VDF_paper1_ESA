@@ -8,6 +8,7 @@ import scipy.ndimage as ndimage
 from scipy.io import savemat
 
 from source_scripts import fit_2D_gaussian
+import generate_2D_contour as gen_contour
 
 slep_idx = 3
 Lmax = 12
@@ -269,6 +270,7 @@ ax.plot(XY_curve[:,0], XY_curve[:,1], 'r')
 
 VDF_2D_GF = ndimage.gaussian_filter(VDF_2D, sigma=5.0, order=0)
 
+'''
 plt.figure()
 # img = plt.contourf(V1, V2, VDF_2D_GF, cmap='gnuplot2', vmin=-1e-6, vmax=6, levels=[1.0, 6.0])
 img = plt.contourf(V1, V2, VDF_2D, cmap='gnuplot2', vmin=-1e-6, vmax=6, levels=[1.0, 6.0])
@@ -277,13 +279,31 @@ p = img.collections[0].get_paths()[0]
 v = p.vertices
 x = v[:,0]
 y = v[:,1]
+'''
+# setting up the grid and interpolating to compare the fitting with
+x, y = np.ravel(V1, 'F'), np.ravel(V2, 'F')
+z = np.ravel(VDF_2D, 'F')
+
+X, Y = np.meshgrid(np.linspace(x.min(), x.max(), 100),
+                   np.linspace(y.min(), y.max(), 100))
+Z = griddata((x, y), z, (X, Y), method='linear', fill_value=0)
+
+#  setting up the model and indicating independent variables
+gencontourdemo = gen_contour.gen_contour(z, x, y, 'Gaussian_ycentered')
+
+# fitting the model with the data
+result = gencontourdemo.fit_2D_VDF()
+fit = gencontourdemo.model.func(X, Y, **result.best_values)
+
+plt.figure()
+img = plt.contourf(X, Y, fit, cmap='gnuplot2', vmin=-1e-3, vmax=6, levels=[1.0, 6.0])
+plt.close()
+p = img.collections[0].get_paths()[0]
+v = p.vertices
+x = v[:,0]
+y = v[:,1]
 
 ax.plot(x, y, color='white')
-
-# performing the 2D GMM on the VDF
-VDF_2D_GF[:,:25] = 0.0
-VDF_2D_GF[:,150:] = 0.0
-gmm = fit_2D_gaussian.GMM_on_VDF(VDF_2D_GF, n_populations=2, Nsamples=int(1e5), plot_GMM=True)
 
 # storing the contour
 curve2storeXY = {'X': v.T[0], 'Y': v.T[1]}
