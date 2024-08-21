@@ -113,3 +113,8 @@ ax[1,1].set_aspect('equal')
 ax[1,1].set_title('2D raw vs. Reconstructed')
 
 plt.subplots_adjust(top=0.95, bottom=0.05, left=0.05, right=0.97)
+
+# saving the VDF for Kris and Michael
+np.save('log10_VDF_Sleprec.npy', VDF_Sleprec)
+np.save('XX.npy', XX)
+np.save('YY.npy', YY)
