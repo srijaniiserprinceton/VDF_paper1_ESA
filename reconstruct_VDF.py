@@ -30,7 +30,7 @@ if __name__=='__main__':
     DATA.VDF[DATA.VDF == 0] = np.nan
     DATA.VDF = DATA.VDF / np.nanmin(DATA.VDF)
 
-    # effective axis of gyrotropic across all relevant shells
+    #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=makeplot)
 
     #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
