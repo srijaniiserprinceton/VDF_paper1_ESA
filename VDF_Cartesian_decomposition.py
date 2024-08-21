@@ -4,8 +4,16 @@ import matplotlib.pyplot as plt
 plt.ion()
 from scipy.interpolate import griddata
 
+#---------------operating Matlab from within Python------------------#
+import matlab.engine as matlab
+eng = matlab.start_matlab()
+s = eng.genpath('/Users/srijanbharatidas/Documents/Research/Codes/Helioseismology/Slepians/Slepian_Git')
+eng.addpath(s, nargout=0)
+
+# adding custom package files
 import generate_2D_contour as gen_contour
 
+'''
 N=50
 Slep_fname = f'localization2D-{N}.mat'
 Slepian_dict = mat73.loadmat(f'../../../Codes/Helioseismology/Slepians/Slepian_Git/IFILES/LOCALIZATION2D/{Slep_fname}')
@@ -13,6 +21,15 @@ Slepian_dict = mat73.loadmat(f'../../../Codes/Helioseismology/Slepians/Slepian_G
 # loading the components of Slepian dictionary
 G, H, V, K, XYP, XY = Slepian_dict['G'], Slepian_dict['H'], Slepian_dict['V'],\
                       Slepian_dict['K'], Slepian_dict['XYP'], Slepian_dict['XY']
+'''
+
+[G, H, V, K, XYP, XY] = eng.localization2D('demo_VDF',nargout=6)
+G = np.asarray(G)
+H = np.asarray(H)
+V = np.asarray(V)
+K = np.asarray(K)
+XYP = np.asarray(XYP)
+XY = np.asarray(XY)
 
 # G = H * 1.0
 

@@ -54,7 +54,7 @@ VDF = VDF / np.nanmin(VDF[~zeros_mask])
 VDF[zeros_mask] = 1e0
 E_idx = 15
 
-time_idx = -1
+time_idx = 7301
 
 vv = VDF[time_idx, E_idx, :, :] 
 data_vv = np.log10(vv)
