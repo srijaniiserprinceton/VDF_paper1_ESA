@@ -1,9 +1,6 @@
 '''
 ---------------------------------------------------------------------------
-This is the first script that should be run so that we know the range of
-energy shells that contain valid data. Use the visual results from the 
-diagnostic plot to find E_idx_min and E_idx_max for making histogram plots
-to find the effect axis of gyrotropy.
+This is the driver script that should be run to get the reconstructed VDFs.
 ---------------------------------------------------------------------------
 '''
 
@@ -17,7 +14,6 @@ from source_scripts import sph2slep, extract_data, locate_axis
 if __name__=='__main__':
     #----------------------READING THE SOURCE FILE----------------------------------#
     filename = './input_data_files/2020-01-26_VDFs.cdf'
-    time_stamp = '2020-01-26'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
     DATA = extract_data.extract_VDF_data(data, instrument='SPAN')
 
