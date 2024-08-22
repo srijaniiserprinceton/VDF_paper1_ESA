@@ -85,6 +85,10 @@ class VDF_rec_polarcaps:
             # saving the 2D VDF by taking a slice along the nearest phi grid to phi0
             self.VDF_2D[E_idx] = fine_from_finecoefs[:, phi0_idx]
 
+        # rolling the VDF in theta to adjust the theta center for gyrotropy in Cartesian
+        roll_theta_idx = -int(self.theta0 - 90)
+        self.VDF_2D = np.roll(self.VDF_2D, roll_theta_idx, axis=1)
+
     def generate_2D_Vgrid(self):
         # converting grids to velocity space
         m_p = 0.010438870      #eV/c^2 where c = 299792 km/s
