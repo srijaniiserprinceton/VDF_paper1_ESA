@@ -34,6 +34,10 @@ class VDF_rec_polarcaps:
         self.VDF_2D = np.zeros((self.N_Eshells, self.N_lat_hr))
         self.gyrotropic_recon_3D_VDF()
 
+        # generating the 2D velocity grid 
+        self.V1, self.V2 = None, None
+        self.generate_2D_Vgrid()
+
     def gen_Slepians_on_polarcap(self):
         # generating the low resolution Slepians (NOT USED IN CURRENT IMPLEMENTATION)
         [G_lr, V_lr, lon_lr, lat_lr] = eng.glmalphapto('VDF_polarcap', self.Lmax, self.instrument, nargout=4)
@@ -73,10 +77,20 @@ class VDF_rec_polarcaps:
             M_hr = G_nonan_hr @ G_nonan_hr.T 
             __, S_hr, __ = np.linalg.svd(M_hr)
             I_hr = np.identity(M_hr.shape[0])
-            coeffs_hr = np.linalg.inv(G_nonan_hr @ G_nonan_hr.T +  self.rcond * I_hr) @ G_nonan_hr @ img_hr[~nan_mask_hr]
+            coeffs_hr = np.linalg.inv(G_nonan_hr @ G_nonan_hr.T +  S_hr.max() * self.rcond * I_hr) @ G_nonan_hr @ img_hr[~nan_mask_hr]
 
             # reconstructing from the polar Slepians and plotting
             fine_from_finecoefs = np.dot(np.moveaxis(self.G_hr, 0, -1), coeffs_hr)
 
             # saving the 2D VDF by taking a slice along the nearest phi grid to phi0
             self.VDF_2D[E_idx] = fine_from_finecoefs[:, phi0_idx]
+
+    def generate_2D_Vgrid(self):
+        # converting grids to velocity space
+        m_p = 0.010438870      #eV/c^2 where c = 299792 km/s
+        q_p = 1 
+        vmag = np.sqrt(2 * q_p * self.DATA.ENERGY[:, 0, 0] / m_p)   # in km/s
+
+        theta_hr = self.lat_hr[:,0]
+        self.V1 = vmag[:, np.newaxis] * np.cos(theta_hr[np.newaxis,:] * np.pi/180)
+        self.V2 = vmag[:, np.newaxis] * np.sin(theta_hr[np.newaxis:,] * np.pi/180)

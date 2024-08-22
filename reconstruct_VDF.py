@@ -9,7 +9,7 @@ import cdflib, sys
 import numpy as np
 
 # imports from our custom package
-from source_scripts import sph2slep, extract_data, locate_axis, VDF_rec_polarcaps
+from source_scripts import sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian
 
 if __name__=='__main__':
     #----------------------READING THE SOURCE FILE----------------------------------#
@@ -17,10 +17,14 @@ if __name__=='__main__':
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
     #------------------USER SPECIFIED PARAMETERS------------------------------------#
-    time_idx = 1300        # time index of VDF to be reconstructed
+    time_idx = 12300        # time index of VDF to be reconstructed
     makeplot = True        # whether we want to save the diagnostic plots
-    TH = 45                # the angular radius of the polar cap
+    TH = 45                # the angular radius of the polar cap [in degrees]
     Lmax = 12              # maximum angular degree for polar Slepian generation
+    Ncart = 30             # effective Shannon number of 2D Cartesian Slepian functions
+    Vmin_shell = 350       # Minimum reliable energy shell [in km/s]
+    rcond_polcap = 0.0     # Condition number for the inversion in polar caps
+    rcond_cart = 1e-4      # Condition number for the inversion on a 2D plane
 
     # extracting the required timestamp
     DATA = extract_data.extract_VDF_data(data, time_idx, instrument='SPAN')
@@ -35,4 +39,8 @@ if __name__=='__main__':
     StepI_bundle = sph2slep.get_StepI_dict(mu_phi, mu_theta, TH, DATA.PHI[0,:,0], DATA.THETA[0,0], instrument='SPAN')
 
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
-    VDF_2D = VDF_rec_polarcaps.VDF_rec_polarcaps(DATA, StepI_bundle, Lmax=Lmax, rcond=0.0)
+    StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps(DATA, StepI_bundle, Lmax=Lmax, rcond=rcond_polcap)
+
+    #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
+    VDF_2D_rec = VDF_rec_cartesian.VDF_rec_cartesian(StepII_bundle, N=Ncart, Vmin_shell=Vmin_shell,
+                                                     rcond=rcond_cart, makeplot=makeplot)
