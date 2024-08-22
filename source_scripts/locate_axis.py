@@ -8,8 +8,8 @@ plt.ion()
 from source_scripts import fit_2D_gaussian as fit_gauss
 
 def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
-    if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols)
-    else: phi_theta_cen = without_plot(DATA, time_idx, Nrows, Ncols)
+    if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, Nrows, Ncols)
+    else: phi_theta_cen = without_plot(DATA, Nrows, Ncols)
 
     phi_theta_cen = np.asarray(phi_theta_cen)
 
@@ -73,7 +73,7 @@ def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
 
     return mu_phi, mu_theta
 
-def with_plot(DATA, time_idx, Nrows, Ncols):
+def with_plot(DATA, Nrows, Ncols):
     fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
 
     # levels chosen just to plot the 2D Gaussian over the VDF
@@ -87,8 +87,8 @@ def with_plot(DATA, time_idx, Nrows, Ncols):
         row, col = i//Ncols, i%Ncols
         # using try/except so that we can loop over the bad data shells with low counts
         try:
-            E = DATA.ENERGY[time_idx, E_idx, :, :][0, 0]
-            tt_orig, pp_orig, vv = DATA.THETA[time_idx, E_idx, :, :], DATA.PHI[time_idx, E_idx, :, :], DATA.VDF[time_idx, E_idx, :, :] 
+            E = DATA.ENERGY[E_idx, :, :][0, 0]
+            tt_orig, pp_orig, vv = DATA.THETA[E_idx, :, :], DATA.PHI[E_idx, :, :], DATA.VDF[E_idx, :, :] 
 
             # get log of vv in the theta-phi grid after interpolating
             pp, tt, logvv = interpolate_vdf(pp_orig, tt_orig, vv)

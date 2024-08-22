@@ -31,7 +31,7 @@ G, H, V, K, XYP, XY = Slepian_dict['G'], Slepian_dict['H'], Slepian_dict['V'],\
 
 #--------------CURRENT METHOD TO GENERATE SLEPIANS BY RUNING MATLAB FROM WITHIN PYTHON----------------#
 N = 30
-[G, H, V, K, XYP, XY] = eng.localization2D('demo_VDF', N, nargout=6)
+[G, H, V, K, XYP, XY] = eng.localization2D('VDF_cartesian', N, nargout=6)
 G = np.asarray(G)
 H = np.asarray(H)
 V = np.asarray(V)
