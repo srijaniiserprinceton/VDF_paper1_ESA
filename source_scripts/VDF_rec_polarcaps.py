@@ -1,12 +1,12 @@
 import numpy as np
 from scipy.interpolate import griddata
+from scipy.io import savemat
 import matplotlib.pyplot as plt
 plt.ion()
 
 import matlab.engine as matlab
-eng = matlab.start_matlab()
-s = eng.genpath('/Users/srijanbharatidas/Documents/Research/Codes/Helioseismology/Slepians/Slepian_Git')
-eng.addpath(s, nargout=0)
+
+import generate_2D_contour as gen_contour
 
 class VDF_rec_polarcaps:
     def __init__(self, DATA, StepI_bundle, Lmax=12, rcond=0.0):
@@ -14,18 +14,24 @@ class VDF_rec_polarcaps:
         self.__dict__.update(StepI_bundle.__dict__)
         self.Lmax = Lmax
         self.rcond = rcond
-        self.G_lr, self.V_lr, self.lat_lr, self.lon_lr = None, None, None, None
-        self.G_hr, self.V_hr, self.lat_hr, self.lon_hr = None, None, None, None
+        self.G_lr, self.V_lr = None, None
+        self.G_hr, self.V_hr = None, None
+
+        # these get flipped somehow when the Slepians are generated in Matlab
+        self.N_lat_lr, self.N_lon_lr = StepI_bundle.lon_lr.T.shape
+        self.N_lat_hr, self.N_lon_hr = StepI_bundle.lon_hr.T.shape
 
         # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
         self.DATA.VDF[np.isnan(self.DATA.VDF)] = 1e0
         self.N_Eshells = self.DATA.VDF.shape[0]
 
         # generating the low and high resolution Slepians-on-polar-cap
+        self.eng = matlab.start_matlab()
+        s = self.eng.genpath('/Users/srijanbharatidas/Documents/Research/Codes/Helioseismology/Slepians/Slepian_Git')
+        self.eng.addpath(s, nargout=0)
         self.gen_Slepians_on_polarcap()
-
-        __, self.N_lat_lr, self.N_lon_lr = self.G_lr.shape
-        __, self.N_lat_hr, self.N_lon_hr = self.G_hr.shape
+        self.eng.quit()
+        delattr(self, 'eng')
 
         self.tt_lr_idx, self.pp_lr_idx = np.meshgrid(np.linspace(0, 180, self.N_lat_lr), np.linspace(0, 360, self.N_lon_lr), indexing='ij')
         self.tt_hr_idx, self.pp_hr_idx = np.meshgrid(np.linspace(0, 180, self.N_lat_hr), np.linspace(0, 360, self.N_lon_hr), indexing='ij')
@@ -38,17 +44,21 @@ class VDF_rec_polarcaps:
         self.V1, self.V2 = None, None
         self.generate_2D_Vgrid()
 
+        # generating the contour for Cartesian Slepians
+        self.generate_cartesian_contour()
+
     def gen_Slepians_on_polarcap(self):
+        '''
         # generating the low resolution Slepians (NOT USED IN CURRENT IMPLEMENTATION)
         [G_lr, V_lr, lon_lr, lat_lr] = eng.glmalphapto('VDF_polarcap', self.Lmax, self.instrument, nargout=4)
         self.G_lr = np.asarray(G_lr)
         self.V_lr = np.asarray(V_lr)
         self.lon_lr = np.asarray(lon_lr)
         self.lat_lr = np.asarray(lat_lr)
-        
+        '''
 
         # generating the high resolution Slepians (USED IN CURRENT IMPLEMENTATION)
-        [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap', self.Lmax, 'HIGHRES', nargout=4)
+        [G_hr, V_hr, lon_hr, lat_hr] = self.eng.glmalphapto('VDF_polarcap', self.Lmax, 'HIGHRES', nargout=4)
         self.G_hr = np.asarray(G_hr)
         self.V_hr = np.asarray(V_hr)
         self.lon_hr = np.asarray(lon_hr)
@@ -98,3 +108,40 @@ class VDF_rec_polarcaps:
         theta_hr = self.lat_hr[:,0]
         self.V1 = vmag[:, np.newaxis] * np.cos(theta_hr[np.newaxis,:] * np.pi/180)
         self.V2 = vmag[:, np.newaxis] * np.sin(theta_hr[np.newaxis:,] * np.pi/180)
+
+    def generate_cartesian_contour(self):
+        '''
+        # setting up the grid and interpolating to compare the fitting with
+        x, y = np.ravel(self.V1, 'F'), np.ravel(self.V2, 'F')
+        z = np.ravel(self.VDF_2D, 'F')
+
+        X, Y = np.meshgrid(np.linspace(x.min(), x.max(), 100),
+                           np.linspace(y.min(), y.max(), 100))
+        Z = griddata((x, y), z, (X, Y), method='linear', fill_value=0)
+
+        #  setting up the model and indicating independent variables
+        gencontourdemo = gen_contour.gen_contour(z, x, y, 'Gaussian_ycentered')
+
+
+        # fitting the model with the data
+        result = gencontourdemo.fit_2D_VDF()
+        fit = gencontourdemo.model.func(X, Y, **result.best_values)
+        '''
+
+        plt.figure()
+        # img = plt.contourf(X, Y, fit, cmap='gnuplot2', vmin=-1e-3, vmax=6, levels=[1.0, 6.0])
+        img = plt.contourf(self.V1, self.V2, self.VDF_2D, cmap='gnuplot2', vmin=-1e-3, vmax=6, levels=[1.0, 6.0])
+        plt.close()
+        p = img.collections[0].get_paths()[0]
+        v = p.vertices
+        x = v[:,0]
+        y = v[:,1]
+
+        # storing the contour
+        curve2storeXY = {'X': v.T[0], 'Y': v.T[1]}
+        savemat('XY_pts.mat', curve2storeXY)
+
+        # storing the evaluation points
+        evalpts2storeXY = {'XP': np.ravel(self.V1,'F'), 'YP': np.ravel(self.V2,'F')}
+        savemat('XYP.mat', evalpts2storeXY)
+

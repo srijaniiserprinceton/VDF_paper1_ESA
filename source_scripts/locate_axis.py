@@ -8,7 +8,7 @@ plt.ion()
 from source_scripts import fit_2D_gaussian as fit_gauss
 
 def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
-    if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, Nrows, Ncols)
+    if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols)
     else: phi_theta_cen = without_plot(DATA, Nrows, Ncols)
 
     phi_theta_cen = np.asarray(phi_theta_cen)
@@ -73,7 +73,7 @@ def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
 
     return mu_phi, mu_theta
 
-def with_plot(DATA, Nrows, Ncols):
+def with_plot(DATA, time_idx, Nrows, Ncols):
     fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
 
     # levels chosen just to plot the 2D Gaussian over the VDF
@@ -111,17 +111,19 @@ def with_plot(DATA, Nrows, Ncols):
         #------------------MAKING DIAGNOSTIC PLOTS IF REQUIRED-----------------------#
         plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, pp, tt, vv, gauss, fit_params)
 
+    plt.savefig(f'./VDF_paper1_plots/VDF_diagnostics/{time_idx}_pcolormesh.png')
+
     return phi_theta_cen, fig, ax
     
-def without_plot(DATA, time_idx, Nrows, Ncols):
+def without_plot(DATA, Nrows, Ncols):
     # making list to store the gyroaxis locations for each shell
     phi_theta_cen = []
 
     for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
         # using try/except so that we can loop over the bad data shells with low counts
         try:
-            E = DATA.ENERGY[time_idx, E_idx, :, :][0, 0]
-            tt_orig, pp_orig, vv = DATA.THETA[time_idx, E_idx, :, :], DATA.PHI[time_idx, E_idx, :, :], DATA.VDF[time_idx, E_idx, :, :] 
+            E = DATA.ENERGY[E_idx, :, :][0, 0]
+            tt_orig, pp_orig, vv = DATA.THETA[E_idx, :, :], DATA.PHI[E_idx, :, :], DATA.VDF[E_idx, :, :] 
 
             # the number of bins which are non-zero in an energy shell
             Ncount = np.sum(~np.isnan(vv)) / len(vv.flatten())
@@ -190,7 +192,7 @@ def interpolate_vdf(pp, tt, vdf, Nphi= 201, Ntheta = 101):
     return phim, thetam, logvdf_
 
 def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, pp, tt, vv, gauss, fit_params):
-    im = ax.contourf(pp_orig, tt_orig, np.log10(vv), cmap='BuPu', rasterized=True)
+    im = ax.pcolormesh(pp_orig, tt_orig, np.log10(vv), cmap='BuPu', rasterized=True)
 
     # plotting the 2D contours of the fitted Gaussian
     ax.contour(pp, tt, gauss, colors='k', linestyles='dashed', linewidths=1, alpha=0.5, levels=5)
