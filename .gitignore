@@ -1,5 +1,7 @@
 *.pdf
 *.png
+*.gif
+*.pkl
 *.cdf
 .DS_Store
 *.npy

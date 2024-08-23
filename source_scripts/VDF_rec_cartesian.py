@@ -73,11 +73,11 @@ class VDF_rec_cartesian:
         xmin, xmax = 0, 1000
         ymin, ymax = -600, 600
 
-        levels = np.linspace(0.1, 6.1, 10)
+        levels = np.linspace(0.1, 10.1, 10)
 
         # plotting the 2D raw VDF from gyrotropization step
         fig, ax = plt.subplots(2, 2, figsize=(8, 9), sharex=True, sharey=True)
-        ax[0,0].pcolormesh(self.V1, self.V2, self.VDF_2D, vmin=0, vmax=6, cmap='hot', rasterized=True)
+        ax[0,0].pcolormesh(self.V1, self.V2, self.VDF_2D, vmin=0, vmax=10, cmap='hot', rasterized=True)
         ax[0,0].contour(self.V1, self.V2, self.VDF_2D, levels=levels, colors='w')
         ax[0,0].plot(self.XY[:,0], self.XY[:,1], '.w', markersize=1)
         ax[0,0].axhline(0, color='white', ls='dashed')
@@ -87,7 +87,7 @@ class VDF_rec_cartesian:
         ax[0,0].set_title('VDF 2D raw')
 
         # plotting the interpolated VDF
-        ax[0,1].pcolormesh(self.XX, self.YY, self.VDF_interp, vmin=0, vmax=6, cmap='hot', rasterized=True)
+        ax[0,1].pcolormesh(self.XX, self.YY, self.VDF_interp, vmin=0, vmax=10, cmap='hot', rasterized=True)
         ax[0,1].contour(self.XX, self.YY, self.VDF_interp, levels=levels, colors='w')
         ax[0,1].plot(self.XY[:,0], self.XY[:,1], '.w', markersize=1)
         ax[0,1].axhline(0, color='white', ls='dashed')
@@ -97,7 +97,7 @@ class VDF_rec_cartesian:
         ax[0,1].set_title('VDF 2D interpolated')
 
         # plotting the reconstructed distribution
-        ax[1,0].pcolormesh(self.XX, self.YY, self.VDF_Sleprec, vmin=0, vmax=6, cmap='hot', rasterized=True)
+        ax[1,0].pcolormesh(self.XX, self.YY, self.VDF_Sleprec, vmin=0, vmax=10, cmap='hot', rasterized=True)
         ax[1,0].contour(self.XX, self.YY, self.VDF_Sleprec, levels=levels, colors='w')
         ax[1,0].plot(self.XY[:,0], self.XY[:,1], '.w', markersize=1)
         ax[1,0].axhline(0, color='white', ls='dashed')
@@ -107,9 +107,9 @@ class VDF_rec_cartesian:
         ax[1,0].set_title('Cartesian Slepian reconstruction')
 
         # plotting the reconstructed distribution vs. the raw 2D VDF from gyrotropization
-        ax[1,1].pcolormesh(self.V1, self.V2, self.VDF_2D, vmin=0, vmax=6, cmap='hot', rasterized=True)
+        ax[1,1].pcolormesh(self.V1, self.V2, self.VDF_2D, vmin=0, vmax=10, cmap='hot', rasterized=True)
         ax[1,1].pcolormesh(self.XX[self.NX//2:], self.YY[self.NX//2:], self.VDF_Sleprec[self.NX//2:],
-                           vmin=0, vmax=6, cmap='hot', rasterized=True)
+                           vmin=0, vmax=10, cmap='hot', rasterized=True)
         ax[1,1].set_xlim([xmin, xmax])
         ax[1,1].set_ylim([ymin, ymax])
         ax[1,1].set_aspect('equal')
@@ -122,7 +122,7 @@ class VDF_rec_cartesian:
         plt.close()
 
         plt.figure(figsize=(8,9))
-        plt.pcolormesh(self.XX, self.YY, self.VDF_Sleprec, vmin=0, vmax=6, cmap='hot', rasterized=True)
+        plt.pcolormesh(self.XX, self.YY, self.VDF_Sleprec, vmin=0, vmax=10, cmap='hot', rasterized=True)
         plt.contour(self.XX, self.YY, self.VDF_Sleprec, levels=levels, colors='w')
         plt.xlim([xmin, xmax])
         plt.ylim([ymin, ymax])

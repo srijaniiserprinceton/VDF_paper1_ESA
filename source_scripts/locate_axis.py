@@ -45,8 +45,9 @@ def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
         plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
         plt.xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=16)
         plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
-
-        plt.savefig(f'VDF_paper1_plots/locate_axis_diagnostic_{time_idx}.png')
+        plt.suptitle(f'{time_idx}')
+        plt.savefig(f'VDF_paper1_plots/VDF_SPAN_polar_plot/{time_idx}.png')
+        plt.close()
 
         # making a plot of the histograms in theta and phi with weights built from the count of each shell
         hist_weights = (phi_theta_cen_purged[:,1] / np.max(phi_theta_cen_purged[:,1]))**2
@@ -70,6 +71,7 @@ def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
         ax[2].set_title(r'Normalized histogram of $\theta$ gyrocenter', fontsize=14)
         ax[2].set_xlabel(r'$\theta$ in degrees')
         plt.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.96, wspace=0.3, hspace=0.3)
+        plt.close()
 
     return mu_phi, mu_theta
 
@@ -110,8 +112,6 @@ def with_plot(DATA, time_idx, Nrows, Ncols):
 
         #------------------MAKING DIAGNOSTIC PLOTS IF REQUIRED-----------------------#
         plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, pp, tt, vv, gauss, fit_params)
-
-    plt.savefig(f'./VDF_paper1_plots/VDF_diagnostics/{time_idx}_pcolormesh.png')
 
     return phi_theta_cen, fig, ax
     
@@ -192,7 +192,8 @@ def interpolate_vdf(pp, tt, vdf, Nphi= 201, Ntheta = 101):
     return phim, thetam, logvdf_
 
 def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, pp, tt, vv, gauss, fit_params):
-    im = ax.pcolormesh(pp_orig, tt_orig, np.log10(vv), cmap='BuPu', rasterized=True)
+    vmin, vmax = 0, 6
+    im = ax.pcolormesh(pp_orig, tt_orig, np.log10(vv), cmap='BuPu', rasterized=True, vmin=vmin, vmax=vmax)
 
     # plotting the 2D contours of the fitted Gaussian
     ax.contour(pp, tt, gauss, colors='k', linestyles='dashed', linewidths=1, alpha=0.5, levels=5)
