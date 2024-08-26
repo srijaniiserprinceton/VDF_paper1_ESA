@@ -7,7 +7,7 @@ plt.ion()
 # imports from our custom package
 from source_scripts import fit_2D_gaussian as fit_gauss
 
-def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
+def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
     if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols)
     else: phi_theta_cen = without_plot(DATA, Nrows, Ncols)
 
@@ -73,7 +73,9 @@ def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
         plt.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.96, wspace=0.3, hspace=0.3)
         plt.close()
 
-    return mu_phi, mu_theta
+    if(all_shell_info):
+        return mu_phi, mu_theta, phi_theta_cen
+    else: mu_phi, mu_theta
 
 def with_plot(DATA, time_idx, Nrows, Ncols):
     fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
