@@ -17,25 +17,6 @@ def write_pickle(x, fname):
     with open(f'{fname}.pkl', 'wb') as handle:
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-def plot_gyroframe_diag(mu_phi, phi_theta_cen):
-    # making marker size dependent on the number of counts
-    s = 20/(phi_theta_cen[:,1] / phi_theta_cen[:,1].max())**2
-    plt.figure()
-    plt.plot(phi_theta_cen[:,0], phi_theta_cen[:,2], '.-k')
-    plt.scatter(phi_theta_cen[:,0], phi_theta_cen[:,2], color='k', s=s)
-    plt.axhline(180, color='k', label='last anode')
-    plt.axhline(mu_phi, color='r', label=r'$\phi_0$')
-    plt.axhline(mu_phi - 11.25, color='r', ls='dashed', label=r'$\phi_0 - 11.25$')
-    plt.axhline(mu_phi + 11.25, color='r', ls='dashed', label=r'$\phi_0 + 11.25$')
-    plt.ylim([90,250])
-    plt.xlim([0, 3500])
-    plt.legend()
-    plt.xlabel(r'Energy shell [eV]')
-    plt.ylabel(r'$\phi_{shell}$')
-    plt.tight_layout()
-    plt.savefig(f'./VDF_paper1_plots/plot_gyroframe_diag/check_center_{time_idx}.png')
-
-
 if __name__=='__main__':
     instrument = 'MMS'        # currently we have 'PSP-SPAN' and 'MMS' (under construction)
     makeplot = True                # whether we want to save the diagnostic plots
@@ -76,8 +57,6 @@ if __name__=='__main__':
         # try:
         #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
         mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
-        sys.exit()
-        if(instrument=='SPAN'): plot_gyroframe_diag(mu_phi, phi_theta_cen)
         
         #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
         StepI_bundle = sph2slep.get_StepI_dict(mu_phi, mu_theta, TH, DATA.PHI[0,:,0], DATA.THETA[0,0], instrument=instrument)

@@ -13,7 +13,7 @@ eng.addpath(s, nargout=0)
 import generate_2D_contour as gen_contour
 
 class VDF_rec_polarcaps:
-    def __init__(self, DATA, StepI_bundle, time_idx, instrument='SPAN', Lmin=8, Lmax=12, rcond=0.0, iterative_fit=True, makeplot=True):
+    def __init__(self, DATA, StepI_bundle, time_idx, instrument='PSP-SPAN', Lmin=8, Lmax=12, rcond=0.0, iterative_fit=True, makeplot=True):
         self.DATA = DATA
         self.time_idx = time_idx
         self.__dict__.update(StepI_bundle.__dict__)
@@ -53,8 +53,7 @@ class VDF_rec_polarcaps:
 
         else:
             self.gen_Slepians_on_polarcap(self.Lmax)
-            if(self.instrument=='SPAN'): self.gyrotropic_recon_3D_VDF()
-            elif(self.instrument=='MMS'): self.gyrotropic_recon_3D_VDF_MMS()
+            self.gyrotropic_recon_3D_VDF()
 
         # the final total fitted plot
         if(self.makeplot):
@@ -75,7 +74,7 @@ class VDF_rec_polarcaps:
                     axs.set_ylim([0, 180])
                     axs.set_aspect('equal')
             
-            plt.savefig(f'VDF_paper1_plots/VDF_rec_polar_plot_MMS/{time_idx}.png')
+            plt.savefig(f'VDF_paper1_plots/VDF_rec_polar_plot_{self.instrument}/{time_idx}.png')
             # plt.close()
 
         # finding the nearest index for phi0 to store the gyrotropized VDF in a plane
@@ -108,8 +107,7 @@ class VDF_rec_polarcaps:
 
         # generating the high resolution Slepians (USED IN CURRENT IMPLEMENTATION)
         # [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap', self.Lmax, 'HIGHRES', nargout=4)
-        if(self.instrument=='SPAN'): [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap', L, 'HIGHRES', nargout=4)
-        elif(self.instrument=='MMS'): [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap_MMS', L, 'HIGHRES', nargout=4)
+        [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap', L, f'{self.instrument}_HIGHRES', nargout=4)
         self.G_hr = np.asarray(G_hr)
         self.V_hr = np.asarray(V_hr)
         self.lon_hr = np.asarray(lon_hr)
