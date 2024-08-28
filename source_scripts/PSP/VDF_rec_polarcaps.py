@@ -68,11 +68,6 @@ class VDF_rec_polarcaps:
             plt.xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=16)
             plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
             plt.suptitle(f'{time_idx}')
-            if(self.instrument=='MMS'):
-                for axs in ax.flatten(): 
-                    axs.set_xlim([0, 360])
-                    axs.set_ylim([0, 180])
-                    axs.set_aspect('equal')
             
             plt.savefig(f'VDF_paper1_plots/VDF_rec_polar_plot_{self.instrument}/{time_idx}.png')
             # plt.close()
@@ -88,12 +83,11 @@ class VDF_rec_polarcaps:
         self.VDF_2D = np.roll(self.VDF_2D, roll_theta_idx, axis=1)
         '''
 
-        if(self.instrument=='SPAN'):
-            # generating the 2D velocity grid 
-            self.V1, self.V2 = None, None
-            self.generate_2D_Vgrid()
-            # generating the contour for Cartesian Slepians
-            self.generate_cartesian_contour()
+        # generating the 2D velocity grid 
+        self.V1, self.V2 = None, None
+        self.generate_2D_Vgrid()
+        # generating the contour for Cartesian Slepians
+        self.generate_cartesian_contour()
 
     def gen_Slepians_on_polarcap(self, L, zonal_only=True):
         '''
@@ -247,19 +241,13 @@ class VDF_rec_polarcaps:
         savemat('XYP.mat', evalpts2storeXY)
 
     def plot_polar_rec_VDF(self, E_idx, ax, fine_from_finecoefs):
-        if(self.instrument=='SPAN'): vmin, vmax = 0, 6
-        elif(self.instrument=='MMS'): vmin, vmax = 1, 7
+        vmin, vmax = 0, 6
         E = self.DATA.ENERGY[E_idx, 0, 0]
-        if(self.instrument=='SPAN'): 
-            ax.pcolormesh(self.lon_hr, self.lat_hr, fine_from_finecoefs,
-                          cmap='BuPu', vmin=vmin, vmax=vmax, rasterized=True)
-            ax.scatter(self.phi0, self.theta0-90, marker='o', color='orange', s=2)
-        elif(self.instrument=='MMS'):
-            ax.pcolormesh(self.lon_hr, 90-self.lat_hr, fine_from_finecoefs[:,::-1],
-                          cmap='BuPu', vmin=vmin, vmax=vmax, rasterized=True)
+        ax.pcolormesh(self.lon_hr, self.lat_hr, fine_from_finecoefs,
+                        cmap='BuPu', vmin=vmin, vmax=vmax, rasterized=True)
+        ax.scatter(self.phi0, self.theta0-90, marker='o', color='orange', s=2)
         ax.set_aspect('equal')
-        if(self.instrument=='SPAN'): ax.set_xlim([75, 275])
-        elif(self.instrument=='MMS'): ax.set_xlim([0, 360])
+        ax.set_xlim([75, 275])
         ax.text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax.transAxes,
                 va='bottom', ha='left', color='black', fontweight='bold')
 
