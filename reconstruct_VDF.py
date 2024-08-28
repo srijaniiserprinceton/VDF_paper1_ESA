@@ -21,9 +21,9 @@ if __name__=='__main__':
     instrument = 'PSP-SPAN'        # currently we have 'PSP-SPAN' and 'MMS' (under construction)
     makeplot = True                # whether we want to save the diagnostic plots
     TH = 45                        # the angular radius of the polar cap [in degrees]
-    iterative_fit = False          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
+    iterative_fit = True          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                       # minimum angular degree for polar Slepian generation
-    Lmax = 5                       # maximum angular degree for polar Slepian generation
+    Lmax = 12                       # maximum angular degree for polar Slepian generation
     Ncart = 50                     # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250               # Minimum reliable energy shell [in km/s]
     rcond_polcap = 0.0             # Condition number for the inversion in polar caps
@@ -64,11 +64,11 @@ if __name__=='__main__':
         #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
         StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps(DATA, StepI_bundle, time_idx, iterative_fit=iterative_fit,
                                                             Lmin=Lmin, Lmax=Lmax, rcond=rcond_polcap, makeplot=True, instrument=instrument)
-        sys.exit()
 
         #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
         VDF_2D_rec = VDF_rec_cartesian.VDF_rec_cartesian(StepII_bundle, time_idx, N=Ncart, Vmin_shell=Vmin_shell,
-                                                            rcond=rcond_cart, makeplot=makeplot)
+                                                         rcond=rcond_cart, makeplot=makeplot)
+        sys.exit()
         # saving the final reconstructed VDF for post-processing calculations
         VDF_rec_dict = {}
         VDF_rec_dict['VDF_2D_rec'] = VDF_2D_rec.VDF_Sleprec

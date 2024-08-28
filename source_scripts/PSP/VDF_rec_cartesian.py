@@ -22,14 +22,6 @@ class VDF_rec_cartesian:
         self.K = np.asarray(K)
         XYP = np.asarray(XYP)
         self.XY = np.asarray(XY)
-        
-        # else:
-        #     Slep_fname = f'circ-{N}.mat'
-        #     Slepian_dict = mat73.loadmat(f'../../../Codes/Helioseismology/Slepians/Slepian_Git/IFILES/LOCALIZATION2D/{Slep_fname}')
-
-        #     # loading the components of Slepian dictionary
-        #     G, H, V, K, XYP, XY = Slepian_dict['G'], Slepian_dict['H'], Slepian_dict['V'],\
-        #                         Slepian_dict['K'], Slepian_dict['XYP'], Slepian_dict['XY']
 
         # self.G = self.H * 1.0
 
@@ -118,7 +110,7 @@ class VDF_rec_cartesian:
 
         plt.subplots_adjust(top=0.95, bottom=0.05, left=0.05, right=0.97)
 
-        plt.savefig(f'VDF_paper1_plots/fourway_plot/{self.time_idx}.png')
+        plt.savefig(f'VDF_paper1_plots/fourway_plot_{self.instrument}/{self.time_idx}.png')
         plt.close()
 
         plt.figure(figsize=(8,9))
@@ -128,5 +120,5 @@ class VDF_rec_cartesian:
         plt.ylim([ymin, ymax])
         plt.gca().set_aspect('equal')
         plt.title(f'Cartesian Slepian reconstruction: {self.time_idx}')
-        plt.savefig(f'VDF_paper1_plots/VDF_solo/{self.time_idx}.png')
+        plt.savefig(f'VDF_paper1_plots/VDF_solo_{self.instrument}/{self.time_idx}.png')
         plt.close()
