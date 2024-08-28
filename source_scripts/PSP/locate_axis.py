@@ -7,7 +7,7 @@ plt.ion()
 # imports from our custom package
 from . import fit_2D_gaussian as fit_gauss
 
-def find_gyroaxis(DATA, time_idx, instrument, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
+def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
     if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols)
     else: phi_theta_cen = without_plot(DATA, Nrows, Ncols)
 
@@ -46,7 +46,7 @@ def find_gyroaxis(DATA, time_idx, instrument, TH=45, Nrows=4, Ncols=8, makeplot=
         plt.xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=16)
         plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
         plt.suptitle(f'{time_idx}')
-        plt.savefig(f'VDF_paper1_plots/VDF_{instrument}_polar_plot/{time_idx}.png')
+        plt.savefig(f'VDF_paper1_plots/VDF_{DATA.instrument}_polar_plot/{time_idx}.png')
         plt.close()
 
         # making a plot of the histograms in theta and phi with weights built from the count of each shell

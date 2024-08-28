@@ -37,29 +37,27 @@ def plot_gyroframe_diag(mu_phi, phi_theta_cen):
 
 
 if __name__=='__main__':
+    instrument = 'MMS'        # currently we have 'PSP-SPAN' and 'MMS' (under construction)
+    makeplot = True                # whether we want to save the diagnostic plots
+    TH = 45                        # the angular radius of the polar cap [in degrees]
+    iterative_fit = False          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
+    Lmin = 8                       # minimum angular degree for polar Slepian generation
+    Lmax = 5                       # maximum angular degree for polar Slepian generation
+    Ncart = 50                     # effective Shannon number of 2D Cartesian Slepian functions
+    Vmin_shell = 250               # Minimum reliable energy shell [in km/s]
+    rcond_polcap = 0.0             # Condition number for the inversion in polar caps
+    rcond_cart = 1e-4              # Condition number for the inversion on a 2D plane
+    ignore_last_anode = False      # if we want to set the last anode counts to nan
+
     #----------------------READING THE SOURCE FILE----------------------------------#
-    # filename = './input_data_files/2020-01-26_VDFs.cdf'
-    filename = './input_data_files/MMS_2016-01-11_VDFs.cdf'
+    if(instrument=='PSP-SPAN'): filename = './input_data_files/2020-01-26_VDFs.cdf'
+    elif(instrument=='MMS'): filename = './input_data_files/MMS_2016-01-11_VDFs.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
-
-    Ntimes = data.energy.data.shape[0]
-
-    instrument = 'MMS'        # currently we have 'PSP' and 'MMS' (under construction)
-    makeplot = True           # whether we want to save the diagnostic plots
-    TH = 45                   # the angular radius of the polar cap [in degrees]
-    iterative_fit = False      # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
-    Lmin = 8                  # minimum angular degree for polar Slepian generation
-    Lmax = 5                 # maximum angular degree for polar Slepian generation
-    Ncart = 50                # effective Shannon number of 2D Cartesian Slepian functions
-    Vmin_shell = 250          # Minimum reliable energy shell [in km/s]
-    rcond_polcap = 0.0        # Condition number for the inversion in polar caps
-    rcond_cart = 1e-4         # Condition number for the inversion on a 2D plane
-    ignore_last_anode = False # if we want to set the last anode counts to nan
 
     # importing scripts based on which instrument we are using
     sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian = import_script.import_instrument_scripts(instrument)
-    sys.exit()
 
+    Ntimes = data.energy.data.shape[0]
     for time_idx in tqdm(range(Ntimes)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
         time_idx = 1000         # time index of VDF to be reconstructed
@@ -68,7 +66,8 @@ if __name__=='__main__':
         DATA = extract_data.extract_VDF_data(data, time_idx, instrument=instrument)
         # we want to scale VDF such that the lowest non-zero entry is 1.0
         DATA.VDF[DATA.VDF == 0] = np.nan
-        DATA.VDF = DATA.VDF / np.nanmin(DATA.VDF)
+        DATA.minval_true = np.nanmin(DATA.VDF)
+        DATA.VDF = DATA.VDF / DATA.minval_true
 
         # putting nan in the last anode if requested
         if(ignore_last_anode):
@@ -77,6 +76,7 @@ if __name__=='__main__':
         # try:
         #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
         mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
+        sys.exit()
         if(instrument=='SPAN'): plot_gyroframe_diag(mu_phi, phi_theta_cen)
         
         #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
