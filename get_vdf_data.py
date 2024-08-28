@@ -51,6 +51,67 @@ def _get_mms_vdf(trange, probe):
 
     return(files)
 
+def _get_solo_vdf(trange):
+    files = pyspedas.solo.swa(trange, datatype='pas-vdf', level='l2', notplot=True, downloadonly=True, time_clip=True)
+    return(files)
+
+def init_solo_vdf(filename):
+    # Constants
+    mass_p = 0.010438870        # eV/(km^2/s^2)
+    charge_p = 1
+
+    xr_data = cdflib.cdf_to_xarray(filename)
+
+    # Get the instrument time
+    xr_time_object = cdflib.epochs_astropy.CDFAstropy.convert_to_astropy(xr_data.Epoch.data)
+    xr_time_array  = xr_time_object.utc.datetime    # Ensure we are in utc!
+
+    # Keep the unix time as a check
+    unix_time = xr_time_object.utc.unix
+
+    # Get the solo orbiter VDF
+    vdf = xr_data.vdf.data
+
+    energy     = xr_data.Energy.data
+    elevation  = xr_data.Elevation.data
+    azimuth    = xr_data.Azimuth.data
+
+    # Get the t_dimension
+    tdim = vdf.shape[0]
+
+    # Convert energy, azimuth, and elevation to be same shape as VDF
+    energy_unsort = np.repeat(np.repeat(np.repeat(energy, 11).reshape(96, 11), 9).reshape(96, 11, 9), tdim).reshape(96, 11, 9, tdim)
+    energy_sort   = energy_unsort.transpose([3, 0, 1, 2])
+
+    elevation_unsort = np.repeat(np.repeat(np.repeat(elevation, 11).reshape(9, 11), 96).reshape(9, 11, 96), tdim).reshape(9, 11, 96, tdim)
+    elevation_sort = elevation_unsort.transpose([3, 2, 1, 0])
+
+    azimuth_unsort = np.repeat(np.repeat(np.repeat(azimuth, 9).reshape(11, 9), 96).reshape(11, 9, 96), tdim).reshape(11, 9, 96, tdim)
+    azimuth_sort = azimuth_unsort.transpose([3, 2, 0, 1])
+
+    vdf_sort = vdf.transpose([0, 3, 1, 2])
+
+    # Generate the xarray dataArrays for each value we are going to pass
+    xr_energy = xr.DataArray(energy_sort, dims = ['time', 'energy_dim', 'phi_dim', 'theta_dim'], coords = dict(time = xr_time_array, energy_dim = np.arange(96), phi_dim = np.arange(11), theta_dim = np.arange(9)), attrs={'units':'eV', 'fillval' : 'np.array([nan], dtype=float32)', 'validmin':'0.01', 'validmax' : '100000.', 'scale' : 'log'})
+    xr_phi    = xr.DataArray(azimuth_sort,    dims = ['time', 'energy_dim', 'phi_dim', 'theta_dim'], coords = dict(time = xr_time_array, energy_dim = np.arange(96), phi_dim = np.arange(11), theta_dim = np.arange(9)), attrs={'units':'degrees', 'fillval' : 'np.array([nan], dtype=float32)', 'validmin':'-180', 'validmax' : '360', 'scale' : 'linear'})
+    xr_theta  = xr.DataArray(elevation_sort,  dims = ['time', 'energy_dim', 'phi_dim', 'theta_dim'], coords = dict(time = xr_time_array, energy_dim = np.arange(96), phi_dim = np.arange(11), theta_dim = np.arange(9)), attrs={'units':'degrees', 'fillval' : 'np.array([nan], dtype=float32)', 'validmin':'-180', 'validmax' : '360', 'scale' : 'linear'})
+    xr_vdf    = xr.DataArray(vdf_sort,         dims = ['time', 'energy_dim', 'phi_dim', 'theta_dim'], coords = dict(time = xr_time_array, energy_dim = np.arange(96), phi_dim = np.arange(11), theta_dim = np.arange(9)), attrs={'units':'s^3/m^6', 'fillval' : 'np.array([nan], dtype=float32)', 'validmin':'0.001', 'validmax' : '1e+16', 'scale' : 'log'})
+
+    xr_unix   = xr.DataArray(unix_time, dims=['time'], coords=dict(time = xr_time_array), attrs={'units' : 'time', 'description':'Unix time'}) 
+
+    # Generate the xarray.Dataset
+    xr_ds = xr.Dataset({
+                        'unix_time' : xr_unix,
+                        'energy' : xr_energy,
+                        'phi' : xr_phi,
+                        'theta' : xr_theta,
+                        'vdf' : xr_vdf
+                       },
+                       attrs={'SO_description' : 'SOLO data recast into proper format. VDF unit is in s^3/m^6.'})
+    
+    return(xr_ds)
+
+
 def init_mms_vdf(filename):
     '''
     Parameters:
@@ -131,7 +192,7 @@ def init_mms_vdf(filename):
                         'theta' : xr_theta,
                         'vdf' : xr_vdf
                        },
-                       attrs={'description' : 'SPAN-i data recast into proper format. VDF unit is in s^3/cm^6.'})
+                       attrs={'description' : 'MMS data recast into proper format. VDF unit is in s^3/cm^6.'})
     
     return(xr_ds)
 
@@ -241,6 +302,22 @@ def save_vdf_data(trange, spacecraft, PROBE='1', CREDENTIALS=None):
         dataset = init_mms_vdf(files[0])
         cdflib.xarray_to_cdf(dataset, f'./input_data_files/MMS_{trange[0][:10]}_VDFs.cdf')
 
+    if spacecraft == 'SO':
+        files = _get_solo_vdf(trange)
+        dataset = init_solo_vdf(files[0])
+
+        # Since Solar Orbiter data sets are large we need to save them in chunks
+        chunks = []
+        for i in range(12):
+            # Break into 12 chunks
+            t1 = dataset.time[0] + i * np.timedelta64(2, 'h')
+            t2 = t1 + np.timedelta64(2, 'h')
+
+            chunk = dataset.sel(time=slice(t1, t2))
+            chunks.append(chunk)
+
+        [cdflib.xarray_to_cdf(f, f'./input_data_files/SO_{trange[0][:10]}_VDF_{i}.cdf') for i, f in enumerate(chunks)]
+
 if __name__ == "__main__":
     # This is where the tests are going to be performed
     # target = '2020-01-26T14:10:42'
@@ -249,8 +326,8 @@ if __name__ == "__main__":
 
     # making the trange tuple
     # trange = [tstart, tend]
-    trange = ['2016-01-11/00:57:04', '2016-01-11/01:57:04']
-
+    # trange = ['2016-01-11/00:57:04', '2016-01-11/01:57:04']
+    trange = ['2020-07-17/00:00:00', '2020-07-17/02:57:00']
     # saving the .cdf file with the formatted VDF from desired time interval
-    save_vdf_data(trange, spacecraft='MMS')
+    save_vdf_data(trange, spacecraft='SO')
 
