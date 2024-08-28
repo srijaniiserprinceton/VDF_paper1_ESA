@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 plt.ion()    
 
 # imports from our custom package
-from source_scripts import fit_2D_gaussian as fit_gauss
+from . import fit_2D_gaussian as fit_gauss
 
-def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
+def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
     if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols)
     else: phi_theta_cen = without_plot(DATA, Nrows, Ncols)
 
@@ -35,8 +35,8 @@ def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
         for axs in ax.flatten():
             axs.scatter(mu_phi, mu_theta, marker='o', color='white')
             axs.plot(x_cap, y_cap, '--r')
-            axs.set_xlim([90,180])
-            axs.set_ylim([30,150])
+            axs.set_xlim([DATA.PHI.min(),DATA.PHI.max()])
+            axs.set_ylim([DATA.THETA.min(),DATA.THETA.max()])
             axs.set_aspect('equal')
 
         plt.subplots_adjust(top=0.96, bottom=0.05, left=0.03, right=0.99, wspace=0.05, hspace=0.05)
@@ -46,7 +46,7 @@ def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
         plt.xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=16)
         plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
         plt.suptitle(f'{time_idx}')
-        plt.savefig(f'VDF_paper1_plots/VDF_SPAN_polar_plot/{time_idx}.png')
+        plt.savefig(f'VDF_paper1_plots/VDF_{DATA.instrument}_polar_plot/{time_idx}.png')
         plt.close()
 
         # making a plot of the histograms in theta and phi with weights built from the count of each shell
@@ -73,7 +73,9 @@ def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True):
         plt.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.96, wspace=0.3, hspace=0.3)
         plt.close()
 
-    return mu_phi, mu_theta
+    if(all_shell_info):
+        return mu_phi, mu_theta, phi_theta_cen
+    else: mu_phi, mu_theta
 
 def with_plot(DATA, time_idx, Nrows, Ncols):
     fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)

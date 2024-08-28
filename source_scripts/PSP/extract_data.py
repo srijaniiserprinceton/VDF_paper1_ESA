@@ -1,7 +1,7 @@
 import numpy as np
 
 class extract_VDF_data:
-    def __init__(self, data, time_idx, instrument='SPAN'):
+    def __init__(self, data, time_idx, instrument='PSP-SPAN'):
         self.data = data
         self.time_idx = time_idx
         self.instrument = instrument
@@ -10,9 +10,15 @@ class extract_VDF_data:
         self.THETA = None
         self.PHI = None
         self.VDF = None 
+        self.minval_true = None    # to be filled in while scaling the data
 
-        if(self.instrument == 'SPAN'):
+        # extracting SPAN data from SWEAP products
+        if(self.instrument == 'PSP-SPAN'):
             self.extract_SPAN_data()
+
+        # extracting SPC data [to be added soon]
+        if(self.instrument == 'PSP-SPC'):
+            pass
     
     def extract_SPAN_data(self):
         '''

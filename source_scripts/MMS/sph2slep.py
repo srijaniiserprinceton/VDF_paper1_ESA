@@ -31,9 +31,10 @@ class get_StepI_dict:
         self.lon_lr, self.lat_lr = None, None
         self.lon_hr, self.lat_hr = None, None
 
-        self.save_Slepian_grid()
+        if(instrument=='SPAN'): self.save_Slepian_grid_PSP()
+        elif(instrument=='MMS'): self.save_Slepian_grid_MMS()
 
-    def save_Slepian_grid(self):
+    def save_Slepian_grid_SPAN(self):
         # padding the raw SPAN grid to make phi range 0 -> 360 and theta range 90 -> -90
         phi_Slepian, theta_Slepian = self.get_Slepian_grid()
         pp_Slep, tt_Slep = np.meshgrid(phi_Slepian, theta_Slepian, indexing='ij')
@@ -71,8 +72,34 @@ class get_StepI_dict:
                 'theta_grid': tt_Slep_flat, 'Nphi': Nphi, 'Ntheta': Ntheta}
         savemat(f'./input_data_files/Slepian_functions/slepgen_grid_HIGHRES.mat', mdict)
 
+    def save_Slepian_grid_MMS(self):
+        # padding the raw SPAN grid to make phi range 0 -> 360 and theta range 90 -> -90
+        phi_Slepian, theta_Slepian = self.get_Slepian_grid()
+        pp_Slep, tt_Slep = np.meshgrid(phi_Slepian, theta_Slepian, indexing='ij')
+        # since the Slepian code takes the grids as flattened point arrays
+        pp_Slep_flat, tt_Slep_flat = pp_Slep.flatten(), tt_Slep.flatten()
+        Nphi, Ntheta = pp_Slep.shape
+
+        self.lon_lr, self.lat_lr = pp_Slep, tt_Slep
+        # making a higher density theta phi grid
+        # phi_Slepian, theta_Slepian = np.linspace(0, 360, 361), np.linspace(0, 180, 181)
+        phi_Slepian, theta_Slepian = np.linspace(0, 360, 32), np.linspace(0, 180, 16)
+        # reversing the order of theta_Slepian since the matlab code wants latitude from [90,-90]
+        theta_Slepian = 90 - theta_Slepian
+        pp_Slep, tt_Slep = np.meshgrid(phi_Slepian, theta_Slepian, indexing='ij')
+        pp_Slep_flat, tt_Slep_flat = pp_Slep.flatten(), tt_Slep.flatten()
+        Nphi, Ntheta = pp_Slep.shape
+
+        self.lon_hr, self.lat_hr = pp_Slep, tt_Slep
+
+        # saving these files as matlab readable arrays
+        mdict = {'phi0': self.phi0, 'theta0': self.theta0, 'cap_extent': self.TH, 'phi_grid': pp_Slep_flat,
+                'theta_grid': tt_Slep_flat, 'Nphi': Nphi, 'Ntheta': Ntheta}
+        savemat(f'./input_data_files/Slepian_functions/{self.instrument}_slepgen_grid_HIGHRES.mat', mdict)
+
     def get_Slepian_grid(self):
         if(self.instrument == 'SPAN'): return self.get_Slepian_grid_SPAN()
+        if(self.instrument == 'MMS'): return self.get_Slepian_grid_MMS()
 
     def get_Slepian_grid_SPAN(self):
         # trying to find the average spacing of the grids
@@ -103,6 +130,10 @@ class get_StepI_dict:
         theta_Slepian = 90 - theta_Slepian
 
         return phi_Slepian, theta_Slepian
+
+    def get_Slepian_grid_MMS(self):
+        # reversing the order of theta_Slepian since the matlab code wants latitude from [90,-90]
+        return self.phi_ESA, self.theta_ESA[::-1] - 90
 
 
 
