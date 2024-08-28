@@ -18,7 +18,7 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'MMS'        # currently we have 'PSP-SPAN' and 'MMS' (under construction)
+    instrument = 'PSP-SPAN'        # currently we have 'PSP-SPAN' and 'MMS' (under construction)
     makeplot = True                # whether we want to save the diagnostic plots
     TH = 45                        # the angular radius of the polar cap [in degrees]
     iterative_fit = False          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax

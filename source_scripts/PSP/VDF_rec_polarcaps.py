@@ -115,8 +115,6 @@ class VDF_rec_polarcaps:
         '''
 
     def gyrotropic_recon_3D_VDF(self):
-        # if(self.makeplot): fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)
-
         # looping over energy shells -> fitting polar Slepians
         for E_idx in range(self.N_Eshells):
             E = self.DATA.ENERGY[E_idx, 0, 0]
@@ -144,42 +142,6 @@ class VDF_rec_polarcaps:
             # reconstructing from the polar Slepians and plotting
             fine_from_finecoefs = np.dot(np.moveaxis(self.G_hr, 0, -1), coeffs_hr)
             self.fine_from_fine[E_idx] += fine_from_finecoefs
-
-            # if(self.makeplot): self.plot_polar_rec_VDF(E_idx, ax[E_idx//8, E_idx%8], fine_from_finecoefs)
-
-    def gyrotropic_recon_3D_VDF_MMS(self):
-        # if(self.makeplot): fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)
-
-        # looping over energy shells -> fitting polar Slepians
-        for E_idx in range(self.N_Eshells):
-            E = self.DATA.ENERGY[E_idx, 0, 0]
-            vv = self.DATA.VDF[E_idx, :, :] 
-            data_vv = np.log10(vv)
-            data = np.zeros((self.N_lat_lr, self.N_lon_lr)) + np.nan
-            # tiling the SPAN-Ai data in the correct location
-            data = data_vv.T
-
-            # interpolating the data to higher resolution before fitting polar Slepians
-            img_hr = griddata((self.tt_lr_idx.flatten(), self.pp_lr_idx.flatten()), data.flatten(),
-                              (self.tt_hr_idx, self.pp_hr_idx), method='linear')
-
-            # removing the previously fitting part 
-            img_hr = img_hr - self.fine_from_fine[E_idx]
-
-            # fitting the polar Slepians
-            nan_mask_hr = np.isnan(img_hr)
-            G_nonan_hr = self.G_hr[:,~nan_mask_hr]
-            M_hr = G_nonan_hr @ G_nonan_hr.T 
-            __, self.S_hr, __ = np.linalg.svd(M_hr)
-            I_hr = np.identity(M_hr.shape[0])
-            coeffs_hr = np.linalg.inv(G_nonan_hr @ G_nonan_hr.T +  self.S_hr.max() * self.rcond * I_hr) @ G_nonan_hr @ img_hr[~nan_mask_hr]
-
-            # reconstructing from the polar Slepians and plotting
-            fine_from_finecoefs = np.dot(np.moveaxis(self.G_hr, 0, -1), coeffs_hr)
-            self.fine_from_fine[E_idx] += fine_from_finecoefs
-
-            # if(self.makeplot): self.plot_polar_rec_VDF(E_idx, ax[E_idx//8, E_idx%8], fine_from_finecoefs)
-
 
 
     def generate_2D_Vgrid(self):
@@ -244,7 +206,7 @@ class VDF_rec_polarcaps:
         vmin, vmax = 0, 6
         E = self.DATA.ENERGY[E_idx, 0, 0]
         ax.pcolormesh(self.lon_hr, self.lat_hr, fine_from_finecoefs,
-                        cmap='BuPu', vmin=vmin, vmax=vmax, rasterized=True)
+                      cmap='BuPu', vmin=vmin, vmax=vmax, rasterized=True)
         ax.scatter(self.phi0, self.theta0-90, marker='o', color='orange', s=2)
         ax.set_aspect('equal')
         ax.set_xlim([75, 275])
