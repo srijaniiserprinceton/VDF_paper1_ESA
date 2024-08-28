@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 plt.ion()    
 
 # imports from our custom package
-from source_scripts import fit_2D_gaussian as fit_gauss
+from . import fit_2D_gaussian as fit_gauss
 
 def find_gyroaxis(DATA, time_idx, instrument, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
     if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols)

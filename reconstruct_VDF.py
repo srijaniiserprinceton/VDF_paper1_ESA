@@ -11,8 +11,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt; plt.ion()
 import matplotlib.cm as cm
 
-# imports from our custom package
-from source_scripts import sph2slep, extract_data, locate_axis_PSP, locate_axis_MMS #, VDF_rec_polarcaps, VDF_rec_cartesian
+from source_scripts import import_script
 
 def write_pickle(x, fname):
     with open(f'{fname}.pkl', 'wb') as handle:
@@ -45,24 +44,25 @@ if __name__=='__main__':
 
     Ntimes = data.energy.data.shape[0]
 
-    instrument = 'MMS'        # currently we have 'SPAN' and 'MMS' (under construction)
+    instrument = 'MMS'        # currently we have 'PSP' and 'MMS' (under construction)
     makeplot = True           # whether we want to save the diagnostic plots
     TH = 45                   # the angular radius of the polar cap [in degrees]
-    iterative_fit = True      # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
+    iterative_fit = False      # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                  # minimum angular degree for polar Slepian generation
-    Lmax = 12                 # maximum angular degree for polar Slepian generation
+    Lmax = 5                 # maximum angular degree for polar Slepian generation
     Ncart = 50                # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250          # Minimum reliable energy shell [in km/s]
     rcond_polcap = 0.0        # Condition number for the inversion in polar caps
     rcond_cart = 1e-4         # Condition number for the inversion on a 2D plane
     ignore_last_anode = False # if we want to set the last anode counts to nan
 
-    if(instrument == 'SPAN'): locate_axis = locate_axis_PSP
-    elif(instrument == 'MMS'): locate_axis = locate_axis_MMS
+    # importing scripts based on which instrument we are using
+    sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian = import_script.import_instrument_scripts(instrument)
+    sys.exit()
 
     for time_idx in tqdm(range(Ntimes)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
-        # time_idx = 250         # time index of VDF to be reconstructed
+        time_idx = 1000         # time index of VDF to be reconstructed
 
         # extracting the required timestamp
         DATA = extract_data.extract_VDF_data(data, time_idx, instrument=instrument)
@@ -77,15 +77,15 @@ if __name__=='__main__':
         # try:
         #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
         mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
-        sys.exit()
         if(instrument=='SPAN'): plot_gyroframe_diag(mu_phi, phi_theta_cen)
-        continue
+        
         #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
-        StepI_bundle = sph2slep.get_StepI_dict(mu_phi, mu_theta, TH, DATA.PHI[0,:,0], DATA.THETA[0,0], instrument='SPAN')
+        StepI_bundle = sph2slep.get_StepI_dict(mu_phi, mu_theta, TH, DATA.PHI[0,:,0], DATA.THETA[0,0], instrument=instrument)
 
         #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
         StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps(DATA, StepI_bundle, time_idx, iterative_fit=iterative_fit,
-                                                            Lmin=Lmin, Lmax=Lmax, rcond=rcond_polcap, makeplot=True)
+                                                            Lmin=Lmin, Lmax=Lmax, rcond=rcond_polcap, makeplot=True, instrument=instrument)
+        sys.exit()
 
         #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
         VDF_2D_rec = VDF_rec_cartesian.VDF_rec_cartesian(StepII_bundle, time_idx, N=Ncart, Vmin_shell=Vmin_shell,

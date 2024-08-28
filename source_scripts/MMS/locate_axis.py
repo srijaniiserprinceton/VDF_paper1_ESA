@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 plt.ion()    
 
 # imports from our custom package
-from source_scripts import fit_2D_gaussian as fit_gauss
+from . import fit_2D_gaussian as fit_gauss
 
 def find_gyroaxis(DATA, time_idx, threshold=-3, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
     if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols, threshold)
@@ -28,8 +28,8 @@ def find_gyroaxis(DATA, time_idx, threshold=-3, TH=45, Nrows=4, Ncols=8, makeplo
     phi_theta_cen_purged = np.asarray(phi_theta_cen_purged)
 
     # finding the effective centroid across shells
-    (mu_phi, sig_phi) = norm.fit(phi_theta_cen_purged[:,2])
-    (mu_theta, sig_theta) = norm.fit(phi_theta_cen_purged[:,3])
+    (mu_phi, sig_phi) = norm.fit(phi_theta_cen_purged[:,3])
+    (mu_theta, sig_theta) = norm.fit(phi_theta_cen_purged[:,2])
 
     # finding the largest TH
     TH = np.max(phi_theta_cen_purged[:,-1])
@@ -123,13 +123,12 @@ def with_plot(DATA, time_idx, Nrows, Ncols, threshold):
         # finding the centroid and the angular extend for this shell upto a given threshold
         logvv = np.log10(vv)
         logvv = np.nan_to_num(logvv, posinf=np.nan, neginf=np.nan)
-        # x_cen, __ = cn_2dg(logvv)
 
         # moving pattern to the center by rolling it
         x_cen, y_cen, gauss = Gauss_2dg(logvv)
         # scaling the centers
-        x_cen = (x_cen - 15/2) / 15 * (xmax-xmin) + (xmax-xmin)/2 #xmin
-        y_cen = (y_cen - 31/2) / 31 * (ymax-ymin) + (ymax-ymin)/2 #ymin
+        x_cen = x_cen/16 * 180
+        y_cen = y_cen/32 * 360
 
         # the number of bins which are non-zero in an energy shell
         Intensity = np.sum(vv[~np.isnan(vv)])
@@ -138,7 +137,7 @@ def with_plot(DATA, time_idx, Nrows, Ncols, threshold):
         TH = plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, logvv, gauss, x_cen, y_cen, threshold)
 
         # appending the located centers
-        phi_theta_cen.append([E, Intensity, x_cen, y_cen, TH])
+        phi_theta_cen.append([E, Intensity, x_cen, y_cen, 85])
 
         # except: continue
 
@@ -260,7 +259,7 @@ def Gauss_2dg(data, error=None, mask=None):
 def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, logvv, gauss, x_cen, y_cen, threshold):
     vmin, vmax = 1.0, 7 #logvv.min(), logvv.max()
 
-    im = ax.pcolormesh(pp_orig, tt_orig, logvv, cmap='seismic', rasterized=True, vmin=vmin, vmax=vmax)
+    im = ax.pcolormesh(pp_orig, tt_orig, logvv, cmap='BuPu', rasterized=True, vmin=vmin, vmax=vmax)
     # im = ax.pcolormesh(logvv, cmap='seismic', rasterized=True, vmin=vmin, vmax=vmax)
 
     # plotting the 2D contours of the fitted Gaussian
