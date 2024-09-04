@@ -53,6 +53,13 @@ class VDF_rec_polarcaps:
 
         else:
             self.gen_Slepians_on_polarcap(self.Lmax)
+            plt.figure()
+            plt.pcolormesh(self.lon_hr, self.lat_hr, self.G_hr[0])
+            plt.scatter('x')
+            plt.text(0.05, 0.05, f'({self.phi0:.2f}, {self.theta0:.2f}) [eV]', transform=plt.gca().transAxes,
+                     va='bottom', ha='left', color='black', fontweight='bold')
+            plt.colorbar()
+            sys.exit()
             self.gyrotropic_recon_3D_VDF_MMS()
 
         # the final total fitted plot

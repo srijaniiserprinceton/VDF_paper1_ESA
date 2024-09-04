@@ -7,14 +7,16 @@ plt.ion()
 # imports from our custom package
 from . import fit_2D_gaussian as fit_gauss
 
-def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
+def find_gyroaxis(DATA, time_idx, bslope, var, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
     if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols)
     else: phi_theta_cen = without_plot(DATA, Nrows, Ncols)
-
     phi_theta_cen = np.asarray(phi_theta_cen)
 
     # removing the shells with less than 0.5 counts of the max
-    weight_mask = phi_theta_cen[:,1] / np.max(phi_theta_cen[:,1]) >= 0.7
+    # weight_mask = phi_theta_cen[:,1] / np.max(phi_theta_cen[:,1]) >= 0.5
+    weight_mask = (phi_theta_cen[:,2] >= 95.625) * (phi_theta_cen[:,2] <= 174.375)
+
+    fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask)
 
     phi_theta_cen_purged = []
     for i in range(len(phi_theta_cen)):
@@ -225,4 +227,73 @@ def plot_gyroframe_diag(mu_phi, phi_theta_cen, time_idx):
     plt.ylabel(r'$\phi_{shell}$')
     plt.tight_layout()
     plt.savefig(f'./VDF_paper1_plots/plot_gyroframe_diag/check_center_{time_idx}.png')
+    plt.close()
+
+def fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask):
+    # making the vx and vy from Energy and phi
+    v = 13.8 * np.sqrt(phi_theta_cen[:,0])
+    vx = v * np.cos(np.radians(phi_theta_cen[:,2]))
+    vy = v * np.sin(np.radians(phi_theta_cen[:,2]))
+    # calculating the weights
+    w = (phi_theta_cen[:,1] / phi_theta_cen[:,1].max())**2
+
+    # fitting the straightline from all SPAN shells
+    slope, intercept = np.polyfit(vx, vy, deg=1, w=w)
+    slope_deg = np.arctan(slope) * 180 / np.pi
+
+    # fitting the straightline from unmasked SPAN shells
+    v = 13.8 * np.sqrt(phi_theta_cen[weight_mask,0])
+    vx_mask = v * np.cos(np.radians(phi_theta_cen[weight_mask,2]))
+    vy_mask = v * np.sin(np.radians(phi_theta_cen[weight_mask,2]))
+    # calculating the weights
+    w_mask = (phi_theta_cen[weight_mask,1] / phi_theta_cen[weight_mask,1].max())**2
+
+    slope_mask, intercept = np.polyfit(vx_mask, vy_mask, deg=1, w=w_mask)
+    slope_deg_mask = np.arctan(slope_mask) * 180 / np.pi
+
+    # making the st line from SPAN fits
+    vx_line = np.linspace(-1000, 0, 1000)
+    vy_line = slope * vx_line + 0 #intercept
+
+    # making the SPAN variance lines
+    SPAN_dist_p = np.tan(slope + 11.25 * np.pi / 180.) * vx_line + 0 #intercept
+    SPAN_dist_m = np.tan(slope - 11.25 * np.pi / 180.) * vx_line + 0 #intercept
+
+    # making the st line from unmasked SPAN fits
+    vy_line_mask = slope_mask * vx_line + 0 #intercept
+
+    # making the SPAN variance lines
+    mask_dist_p = np.tan(slope_mask + 11.25 * np.pi / 180.) * vx_line + 0 #intercept
+    mask_dist_m = np.tan(slope_mask - 11.25 * np.pi / 180.) * vx_line + 0 #intercept
+
+    # making the st line from B data
+    vy_line_B = bslope * vx_line + 0 #intercept
+    slope_deg_B = np.arctan(bslope) * 180 / np.pi
+
+    # making the variance lines
+    var_dist_p = np.tan(bslope + var * np.pi / 180.) * vx_line + 0 #intercept
+    var_dist_m = np.tan(bslope - var * np.pi / 180.) * vx_line + 0 #intercept
+
+    plt.figure()
+    plt.plot(vx, vy, '.-k')
+    plt.scatter(vx, vy, color='k', s=20./w)
+    plt.plot(vx_line, vy_line, '--r', label='Gyro estimate VDF')
+    # plt.fill_between(vx_line, SPAN_dist_m, SPAN_dist_p, alpha=0.4, color='red')
+    plt.plot(vx_line, vy_line_mask, '--b', label='Masked gyro estimate VDF')
+    plt.fill_between(vx_line, mask_dist_m, mask_dist_p, alpha=0.4, color='blue')
+    plt.plot(vx_line, vy_line_B, '--', color='grey', label='Gyro estimate B')
+    plt.fill_between(vx_line, var_dist_m, var_dist_p, alpha=0.4, color='black')
+    plt.ylim([-600,600])
+    plt.xlim([-1000, 0])
+    plt.xlabel(r'$v_x$ [km/s]')
+    plt.ylabel(r'$v_y$ [km/s]')
+    plt.text(0.05, 0.15, f'VDF axis slope: {slope_deg:.2f} [degrees]', transform=plt.gca().transAxes,
+             va='bottom', ha='left', color='red', fontweight='bold')
+    plt.text(0.05, 0.1, f'Masked shell slope: {slope_deg_mask:.2f} [degrees]', transform=plt.gca().transAxes,
+             va='bottom', ha='left', color='blue', fontweight='bold')
+    plt.text(0.05, 0.05, f'B slope: {slope_deg_B:.2f} [degrees]', transform=plt.gca().transAxes,
+             va='bottom', ha='left', color='grey', fontweight='bold')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(f'./VDF_paper1_plots/plot_gyroframe_vxvy/check_gyrodir_{time_idx}.png')
     plt.close()
