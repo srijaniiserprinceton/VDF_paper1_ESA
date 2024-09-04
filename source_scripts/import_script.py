@@ -9,5 +9,5 @@ def import_instrument_scripts(instrument):
 
     elif(instrument == 'MMS'):
         # imports from our custom package
-        from source_scripts.MMS import sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian
-        return sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian
+        from source_scripts.MMS import sph2slep, extract_data, locate_axis, VDF_rec_polarcaps
+        return sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, None

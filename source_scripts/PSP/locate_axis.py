@@ -49,6 +49,9 @@ def find_gyroaxis(DATA, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True, all_sh
         plt.savefig(f'VDF_paper1_plots/VDF_{DATA.instrument}_polar_plot/{time_idx}.png')
         plt.close()
 
+        # making the gyroaxis diagnostic plot
+        plot_gyroframe_diag(mu_phi, phi_theta_cen, time_idx)
+
         # making a plot of the histograms in theta and phi with weights built from the count of each shell
         hist_weights = (phi_theta_cen_purged[:,1] / np.max(phi_theta_cen_purged[:,1]))**2
 
@@ -204,3 +207,22 @@ def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, pp, tt, vv, gauss, fit_param
     ax.text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax.transAxes,
                     va='bottom', ha='left', color='red', fontweight='bold')
     ax.plot(fit_params[1], fit_params[2], 'xk')
+
+def plot_gyroframe_diag(mu_phi, phi_theta_cen, time_idx):
+    # making marker size dependent on the number of counts
+    s = 20/(phi_theta_cen[:,1] / phi_theta_cen[:,1].max())**2
+    plt.figure()
+    plt.plot(phi_theta_cen[:,0], phi_theta_cen[:,2], '.-k')
+    plt.scatter(phi_theta_cen[:,0], phi_theta_cen[:,2], color='k', s=s)
+    plt.axhline(180, color='k', label='last anode')
+    plt.axhline(mu_phi, color='r', label=r'$\phi_0$')
+    plt.axhline(mu_phi - 11.25, color='r', ls='dashed', label=r'$\phi_0 - 11.25$')
+    plt.axhline(mu_phi + 11.25, color='r', ls='dashed', label=r'$\phi_0 + 11.25$')
+    plt.ylim([90,250])
+    plt.xlim([0, 3500])
+    plt.legend()
+    plt.xlabel(r'Energy shell [eV]')
+    plt.ylabel(r'$\phi_{shell}$')
+    plt.tight_layout()
+    plt.savefig(f'./VDF_paper1_plots/plot_gyroframe_diag/check_center_{time_idx}.png')
+    plt.close()
