@@ -6,6 +6,12 @@ def import_instrument_scripts(instrument):
         # imports from our custom package
         from source_scripts.PSP import sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian
         return sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian
+    
+    elif(instrument == 'PSP-SPAN-MT'):
+        # imports from our custom package
+        from source_scripts.PSP import sph2slep, extract_data, locate_axis
+        return sph2slep, extract_data, locate_axis, None, None
+        
 
     elif(instrument == 'MMS'):
         # imports from our custom package

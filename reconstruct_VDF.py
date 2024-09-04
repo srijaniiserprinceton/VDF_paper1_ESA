@@ -67,7 +67,7 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'MMS'        # currently we have 'PSP-SPAN' and 'MMS' (under construction)
+    instrument = 'PSP-SPAN-MT'        # currently we have 'PSP-SPAN' and 'MMS' (under construction)
     makeplot = True                # whether we want to save the diagnostic plots
     TH = 85                        # the angular radius of the polar cap [in degrees]
     iterative_fit = False          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
@@ -83,6 +83,9 @@ if __name__=='__main__':
     if(instrument=='PSP-SPAN'): 
         filename = './input_data_files/2020-01-26_VDFs.cdf'
         reconstruct_func = reconstruct_from_PSP
+    elif(instrument=='PSP-SPAN-MT'): 
+        filename = './input_data_files/2020-01-26_VDFs.cdf'
+        reconstruct_func = reconstruct_from_PSP
     elif(instrument=='MMS'): 
         filename = './input_data_files/MMS_2016-01-11_VDFs.cdf'
         reconstruct_func = reconstruct_from_MMS
@@ -96,7 +99,7 @@ if __name__=='__main__':
     sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian = import_script.import_instrument_scripts(instrument)
 
     Ntimes = data.energy.data.shape[0]
-    for time_idx in tqdm(range(Ntimes)):
+    for time_idx in tqdm(range(0,10)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
         # time_idx = 0         # time index of VDF to be reconstructed
 

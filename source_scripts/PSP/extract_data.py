@@ -15,6 +15,9 @@ class extract_VDF_data:
         # extracting SPAN data from SWEAP products
         if(self.instrument == 'PSP-SPAN'):
             self.extract_SPAN_data()
+        
+        if(self.instrument == 'PSP-SPAN-MT'):
+            self.extract_SPAN_data()
 
         # extracting SPC data [to be added soon]
         if(self.instrument == 'PSP-SPC'):

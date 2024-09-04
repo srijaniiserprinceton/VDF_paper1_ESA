@@ -2,7 +2,12 @@ import numpy as np
 from scipy import interpolate
 from scipy.stats import norm
 import matplotlib.pyplot as plt
+from matplotlib import rc
 plt.ion()    
+
+font = {'size'   : 22}
+
+rc('font', **font)
 
 # imports from our custom package
 from . import fit_2D_gaussian as fit_gauss
@@ -13,10 +18,11 @@ def find_gyroaxis(DATA, time_idx, bslope, var, TH=45, Nrows=4, Ncols=8, makeplot
     phi_theta_cen = np.asarray(phi_theta_cen)
 
     # removing the shells with less than 0.5 counts of the max
-    # weight_mask = phi_theta_cen[:,1] / np.max(phi_theta_cen[:,1]) >= 0.5
-    weight_mask = (phi_theta_cen[:,2] >= 95.625) * (phi_theta_cen[:,2] <= 174.375)
+    weight_mask = phi_theta_cen[:,1] / np.max(phi_theta_cen[:,1]) >= 0.1
+    # weight_mask = (phi_theta_cen[:,2] >= 95.625) * (phi_theta_cen[:,2] <= 174.375)
 
-    fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask)
+
+    fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask, DATA)
 
     phi_theta_cen_purged = []
     for i in range(len(phi_theta_cen)):
@@ -110,7 +116,8 @@ def with_plot(DATA, time_idx, Nrows, Ncols):
             gauss = fit_gauss.gaussian(fit_params, pp, tt)
 
             # the number of bins which are non-zero in an energy shell
-            Ncount = np.sum(~np.isnan(vv)) / len(vv.flatten())
+            # Ncount = np.sum(~np.isnan(vv)) / len(vv.flatten())
+            Ncount = np.nansum(vv)
 
             # appending the located centers
             phi_theta_cen.append([E, Ncount, fit_params[1], fit_params[2]])
@@ -229,7 +236,7 @@ def plot_gyroframe_diag(mu_phi, phi_theta_cen, time_idx):
     plt.savefig(f'./VDF_paper1_plots/plot_gyroframe_diag/check_center_{time_idx}.png')
     plt.close()
 
-def fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask):
+def fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask, DATA=None):
     # making the vx and vy from Energy and phi
     v = 13.8 * np.sqrt(phi_theta_cen[:,0])
     vx = v * np.cos(np.radians(phi_theta_cen[:,2]))
@@ -248,52 +255,78 @@ def fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask):
     # calculating the weights
     w_mask = (phi_theta_cen[weight_mask,1] / phi_theta_cen[weight_mask,1].max())**2
 
-    slope_mask, intercept = np.polyfit(vx_mask, vy_mask, deg=1, w=w_mask)
+    # slope_mask, intercept_mask = np.polyfit(vx_mask, vy_mask, deg=1, w=w_mask)
+    # slope_deg_mask = np.arctan(slope_mask) * 180 / np.pi
+    slope_mask = ((vx_mask * w_mask) @ (vy_mask * w_mask)) / ((vx_mask * w_mask) @ (vx_mask * w_mask))
+    intercept_mask = 0
     slope_deg_mask = np.arctan(slope_mask) * 180 / np.pi
 
     # making the st line from SPAN fits
     vx_line = np.linspace(-1000, 0, 1000)
-    vy_line = slope * vx_line + 0 #intercept
+    vy_line = slope * vx_line + intercept
 
     # making the SPAN variance lines
-    SPAN_dist_p = np.tan(slope + 11.25 * np.pi / 180.) * vx_line + 0 #intercept
-    SPAN_dist_m = np.tan(slope - 11.25 * np.pi / 180.) * vx_line + 0 #intercept
+    SPAN_dist_p = np.tan((slope_deg + 11.25) * np.pi / 180.) * vx_line + intercept
+    SPAN_dist_m = np.tan((slope_deg - 11.25) * np.pi / 180.) * vx_line + intercept
 
     # making the st line from unmasked SPAN fits
-    vy_line_mask = slope_mask * vx_line + 0 #intercept
+    vy_line_mask = slope_mask * vx_line + intercept_mask
 
     # making the SPAN variance lines
-    mask_dist_p = np.tan(slope_mask + 11.25 * np.pi / 180.) * vx_line + 0 #intercept
-    mask_dist_m = np.tan(slope_mask - 11.25 * np.pi / 180.) * vx_line + 0 #intercept
+    mask_dist_p = np.tan((slope_deg_mask + 11.25) * np.pi / 180.) * vx_line + intercept_mask
+    mask_dist_m = np.tan((slope_deg_mask - 11.25) * np.pi / 180.) * vx_line + intercept_mask
+
+    b_intercept = (w_mask @ ((vy_mask * w_mask) - bslope * (vx_mask * w_mask)))/(w_mask @ w_mask) 
 
     # making the st line from B data
-    vy_line_B = bslope * vx_line + 0 #intercept
+    vy_line_B = bslope * vx_line + b_intercept
     slope_deg_B = np.arctan(bslope) * 180 / np.pi
 
     # making the variance lines
-    var_dist_p = np.tan(bslope + var * np.pi / 180.) * vx_line + 0 #intercept
-    var_dist_m = np.tan(bslope - var * np.pi / 180.) * vx_line + 0 #intercept
+    var_dist_p = np.tan((slope_deg_B + var) * np.pi / 180.) * vx_line + b_intercept
+    var_dist_m = np.tan((slope_deg_B - var) * np.pi / 180.) * vx_line + b_intercept
 
-    plt.figure()
+    angle_diff = np.abs(slope_deg_B - slope_deg_mask)
+    # plt.style.use('dark_background')
+    plt.figure(figsize=(12,12), dpi=120)
     plt.plot(vx, vy, '.-k')
-    plt.scatter(vx, vy, color='k', s=20./w)
-    plt.plot(vx_line, vy_line, '--r', label='Gyro estimate VDF')
+    # plt.scatter(vx, vy, color='k', s=20./w)
+    plt.scatter(vx[weight_mask], vy[weight_mask], color='r', s=20./w[weight_mask])
+    # plt.plot(vx_line, vy_line, '--r', label='Gyro estimate VDF')
     # plt.fill_between(vx_line, SPAN_dist_m, SPAN_dist_p, alpha=0.4, color='red')
-    plt.plot(vx_line, vy_line_mask, '--b', label='Masked gyro estimate VDF')
-    plt.fill_between(vx_line, mask_dist_m, mask_dist_p, alpha=0.4, color='blue')
-    plt.plot(vx_line, vy_line_B, '--', color='grey', label='Gyro estimate B')
-    plt.fill_between(vx_line, var_dist_m, var_dist_p, alpha=0.4, color='black')
+    plt.plot(vx_line, vy_line_mask, '--', color='tab:blue', linewidth=2, label='Masked gyro estimate VDF')
+    plt.fill_between(vx_line, mask_dist_m, mask_dist_p, alpha=0.3, color='tab:blue')
+    plt.plot(vx_line, vy_line_B, '-', color='tab:green', linewidth=2, label='Gyro estimate B')
+    plt.fill_between(vx_line, var_dist_m, var_dist_p, alpha=0.3, color='tab:green')
     plt.ylim([-600,600])
-    plt.xlim([-1000, 0])
+    plt.xlim([-1000, 200])
     plt.xlabel(r'$v_x$ [km/s]')
     plt.ylabel(r'$v_y$ [km/s]')
-    plt.text(0.05, 0.15, f'VDF axis slope: {slope_deg:.2f} [degrees]', transform=plt.gca().transAxes,
-             va='bottom', ha='left', color='red', fontweight='bold')
+    # plt.text(0.05, 0.15, f'VDF axis slope: {slope_deg:.2f} [degrees]', transform=plt.gca().transAxes,
+    #          va='bottom', ha='left', color='red', fontweight='bold')
     plt.text(0.05, 0.1, f'Masked shell slope: {slope_deg_mask:.2f} [degrees]', transform=plt.gca().transAxes,
-             va='bottom', ha='left', color='blue', fontweight='bold')
+             va='bottom', ha='left', color='tab:blue', fontweight='bold')
     plt.text(0.05, 0.05, f'B slope: {slope_deg_B:.2f} [degrees]', transform=plt.gca().transAxes,
-             va='bottom', ha='left', color='grey', fontweight='bold')
-    plt.legend()
+             va='bottom', ha='left', color='tab:green', fontweight='bold')
+    plt.title(f'Angle Diff = {angle_diff:.2f} Degrees | Polar Cap = {angle_diff < 11.25}')
+    # plt.legend()
     plt.tight_layout()
+
+    if DATA:
+        # convert to Cartesian coordinates
+        vx_grid = 13.8 * np.sqrt(DATA.ENERGY) * np.cos(np.radians(DATA.PHI)) * np.cos(np.radians(DATA.THETA - 90))
+        vy_grid = 13.8 * np.sqrt(DATA.ENERGY) * np.sin(np.radians(DATA.PHI)) * np.cos(np.radians(DATA.THETA - 90))
+        vz_grid = 13.8 * np.sqrt(DATA.ENERGY) * np.sin(np.radians(DATA.THETA - 90))
+
+        vdf = DATA.VDF
+        phi_plane = 0
+        theta_plane = 4
+        plt.contourf(vx_grid[:, :, theta_plane], vy_grid[:, :, theta_plane], np.log10(np.nansum(vdf[:, :, :], axis=2)), cmap='plasma', zorder=0)
+        plt.scatter(vx_grid[:, :, theta_plane], vy_grid[:, :, theta_plane], marker='x', color='grey', alpha=0.7, s = 10)
+        
+
+        
+    plt.gca().set_aspect('equal')
     plt.savefig(f'./VDF_paper1_plots/plot_gyroframe_vxvy/check_gyrodir_{time_idx}.png')
     plt.close()
+    
