@@ -30,7 +30,7 @@ def load_mag_data(trange, DATATYPE='mag_sc_4_per_cycle'):
     
 def init_mag_data(trange, CLIP=True, PAD=None, INST_2_SPAN=False): #, DATATYPE='mag_sc_4_per_cycle'):
     """
-    
+    Initialize magnetic field data.
     """
     filenames = load_mag_data(trange, DATATYPE='mag_sc_4_per_cycle')
     rename_dict = {'epoch_mag_SC_4_Sa_per_Cyc' : 'epoch', 'epoch_mag_SC_zero' : 'epoch_zero'}
@@ -124,6 +124,8 @@ def group_mag_data(trange, source_time, window_dt, CLIP=True, SLOPES_ONLY=True, 
     [1]: from source_scripts.PSP.get_b_field_data import group_mag_data 
     [2]: trange = [psp_dist.time.data[0], psp_dist.time.data[-1]]
     [3]: slopes = group_mag_data(trange, psp_dist.time.data, window_dt = 4, ALL_VECTORS=True) 
+
+    TODO: CLEAN UP THIS CODE A BIT
     """
     mag_data = init_mag_data(trange, CLIP=CLIP, PAD=window_dt)
 
