@@ -53,13 +53,18 @@ class VDF_rec_polarcaps:
 
         else:
             self.gen_Slepians_on_polarcap(self.Lmax)
+            print(self.lon_hr, self.lat_hr)
             plt.figure()
-            plt.pcolormesh(self.lon_hr, self.lat_hr, self.G_hr[0])
-            plt.scatter('x')
+            plt.pcolormesh(self.lon_hr, self.lat_hr, self.G_hr[1])
+            # plotting the circle around the domain
+            theta_circ = np.linspace(0, 2*np.pi, 100)
+            xcirc, ycirc = self.TH * np.cos(theta_circ) + self.phi0, self.TH * np.sin(theta_circ) + (self.theta0-90)
+            plt.plot(xcirc, ycirc, '--r')
+            plt.scatter(self.phi0, self.theta0 - 90, marker='x', color='white')
             plt.text(0.05, 0.05, f'({self.phi0:.2f}, {self.theta0:.2f}) [eV]', transform=plt.gca().transAxes,
                      va='bottom', ha='left', color='black', fontweight='bold')
+            plt.gca().set_aspect('equal')
             plt.colorbar()
-            sys.exit()
             self.gyrotropic_recon_3D_VDF_MMS()
 
         # the final total fitted plot
@@ -78,7 +83,7 @@ class VDF_rec_polarcaps:
             if(self.instrument=='MMS'):
                 for axs in ax.flatten(): 
                     axs.set_xlim([0, 360])
-                    axs.set_ylim([0, 180])
+                    axs.set_ylim([-90, 90])
                     axs.set_aspect('equal')
             
             plt.savefig(f'VDF_paper1_plots/VDF_rec_polar_plot_MMS/{time_idx}.png')
@@ -104,32 +109,37 @@ class VDF_rec_polarcaps:
         # [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap', self.Lmax, 'HIGHRES', nargout=4)
         [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap_MMS', L, 'HIGHRES', nargout=4)
         self.G_hr = np.asarray(G_hr)
-        self.V_hr = np.asarray(V_hr)
+        self.V_hr = np.asarray(V_hr).squeeze()
         self.lon_hr = np.asarray(lon_hr)
         self.lat_hr = np.asarray(lat_hr)
 
-        '''
-        # only retaining the axisymmetric Slepians-on-a-polar-cap
-        if(zonal_only):
-            zonal_idx = np.array([0, 5, 14, 29])
-            self.G_hr = self.G_hr[zonal_idx]
-        '''
+        
+        # keeping only until the Shannon number
+        N2D = np.argmin(np.abs(self.V_hr - 0.5))
+        self.G_hr = self.G_hr[:N2D]
+        self.V_hr = self.V_hr[:N2D]
+        
 
     def gyrotropic_recon_3D_VDF_MMS(self):
         # if(self.makeplot): fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)
 
         # looping over energy shells -> fitting polar Slepians
         for E_idx in range(self.N_Eshells):
+            # E_idx = 15
+            # print(E_idx)
             E = self.DATA.ENERGY[E_idx, 0, 0]
             vv = self.DATA.VDF[E_idx, :, :] 
             data_vv = np.log10(vv)
-            data = np.zeros((self.N_lat_lr, self.N_lon_lr)) + np.nan
+            data_vv = np.nan_to_num(data_vv, posinf=np.nan, neginf=np.nan)
+            data = np.zeros((self.N_lat_lr, self.N_lon_lr))# + np.nan
             # tiling the MMS-ion data in the correct location
-            data = data_vv.T
+            data = data_vv
 
             # interpolating the data to higher resolution before fitting polar Slepians
-            img_hr = griddata((self.tt_lr_idx.flatten(), self.pp_lr_idx.flatten()), data.flatten(),
-                              (self.tt_hr_idx, self.pp_hr_idx), method='linear')
+            # img_hr = griddata((self.tt_lr_idx.flatten(), self.pp_lr_idx.flatten()), data.flatten(),
+            #                   (self.tt_hr_idx, self.pp_hr_idx), method='linear')
+            img_hr = griddata((self.lon_lr.flatten(), self.lat_lr.flatten()), data.flatten(),
+                              (self.lon_hr, self.lat_hr), method='linear')
 
             # removing the previously fitting part 
             img_hr = img_hr - self.fine_from_fine[E_idx]
@@ -148,71 +158,15 @@ class VDF_rec_polarcaps:
 
             # if(self.makeplot): self.plot_polar_rec_VDF(E_idx, ax[E_idx//8, E_idx%8], fine_from_finecoefs)
 
-
-
-    def generate_2D_Vgrid(self):
-        # converting grids to velocity space
-        m_p = 0.010438870      #eV/c^2 where c = 299792 km/s
-        q_p = 1 
-        vmag = np.sqrt(2 * q_p * self.DATA.ENERGY[:, 0, 0] / m_p)   # in km/s
-
-        theta_hr = self.lat_hr[:,0]
-        self.V1 = vmag[:, np.newaxis] * np.cos(theta_hr[np.newaxis,:] * np.pi/180)
-        self.V2 = vmag[:, np.newaxis] * np.sin(theta_hr[np.newaxis:,] * np.pi/180)
-
-    def generate_cartesian_contour(self):
-        '''
-        # setting up the grid and interpolating to compare the fitting with
-        x, y = np.ravel(self.V1, 'F'), np.ravel(self.V2, 'F')
-        z = np.ravel(self.VDF_2D, 'F')
-
-        X, Y = np.meshgrid(np.linspace(x.min(), x.max(), 100),
-                           np.linspace(y.min(), y.max(), 100))
-        Z = griddata((x, y), z, (X, Y), method='linear', fill_value=0)
-
-        #  setting up the model and indicating independent variables
-        gencontourdemo = gen_contour.gen_contour(z, x, y, 'Gaussian_ycentered')
-
-
-        # fitting the model with the data
-        result = gencontourdemo.fit_2D_VDF()
-        fit = gencontourdemo.model.func(X, Y, **result.best_values)
-        '''
-
-        plt.figure()
-        self.VDF_2D[:6] = np.nan
-        # img = plt.contourf(X, Y, fit, cmap='gnuplot2', vmin=-1e-3, vmax=6, levels=[1.0, 6.0])
-        img = plt.contourf(self.V1, self.V2, self.VDF_2D, cmap='gnuplot2', vmin=0.0, vmax=100, levels=[1.0, 100.0])
-        plt.close()
-        p = img.collections[0].get_paths()[0]
-        v = p.vertices
-        x = v[:,0]
-        y = v[:,1]
-
-        # storing the contour
-        curve2storeXY = {'X': v.T[0], 'Y': v.T[1]}
-        savemat('XY_pts.mat', curve2storeXY)
-
-        '''
-        plt.figure()
-        plt.contourf(self.V1, self.V2, self.VDF_2D, cmap='gnuplot2', vmin=0.0, vmax=100, levels=[1.0, 100.0])
-        np.save('VDF_2D.npy', self.VDF_2D)
-        np.save('V1.npy', self.V1)
-        np.save('V2.npy', self.V2)
-        plt.plot(v.T[0], v.T[1], 'k')
-        plt.savefig(f'VDF_paper1_plots/VDF_rec_polar_plot/contour_{self.time_idx}.png')
-        plt.close()
-        '''
-
-        # storing the evaluation points
-        evalpts2storeXY = {'XP': np.ravel(self.V1,'F'), 'YP': np.ravel(self.V2,'F')}
-        savemat('XYP.mat', evalpts2storeXY)
-
     def plot_polar_rec_VDF(self, E_idx, ax, fine_from_finecoefs):
         vmin, vmax = 1, 7
         E = self.DATA.ENERGY[E_idx, 0, 0]
-        ax.pcolormesh(self.lon_hr, 90-self.lat_hr, fine_from_finecoefs[:,::-1],
-                        cmap='BuPu', vmin=vmin, vmax=vmax, rasterized=True)
+        ax.pcolormesh(self.lon_hr, self.lat_hr, fine_from_finecoefs,
+                      cmap='plasma', vmin=vmin, vmax=vmax, rasterized=True)
+        theta_circ = np.linspace(0, 2*np.pi, 100)
+        xcirc, ycirc = self.TH * np.cos(theta_circ) + self.phi0, self.TH * np.sin(theta_circ) + (self.theta0-90)
+        ax.plot(xcirc, ycirc, '--r')
+        ax.scatter(self.phi0, self.theta0 - 90, marker='x', color='black')
         ax.set_aspect('equal')
         ax.set_xlim([0, 360])
         ax.text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax.transAxes,

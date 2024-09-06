@@ -47,7 +47,7 @@ class get_StepI_dict:
         # phi_Slepian, theta_Slepian = np.linspace(0, 360, 361), np.linspace(0, 180, 181)
         phi_Slepian, theta_Slepian = np.linspace(0, 360, 32), np.linspace(0, 180, 16)
         # reversing the order of theta_Slepian since the matlab code wants latitude from [90,-90]
-        theta_Slepian = 90 - theta_Slepian
+        theta_Slepian = theta_Slepian - 90
         pp_Slep, tt_Slep = np.meshgrid(phi_Slepian, theta_Slepian, indexing='ij')
         pp_Slep_flat, tt_Slep_flat = pp_Slep.flatten(), tt_Slep.flatten()
         Nphi, Ntheta = pp_Slep.shape

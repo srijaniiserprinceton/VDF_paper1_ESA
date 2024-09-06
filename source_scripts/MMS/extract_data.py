@@ -21,7 +21,7 @@ class extract_VDF_data:
         - dim1: energy dimension, dim2: phi dimension, and dim3: theta dimension.
         - flipping the phi axis to have azimuthal angle to be monotonically increasing.
         '''
-        self.ENERGY = self.data.energy.data[self.time_idx,:,::-1,:]
-        self.THETA = self.data.theta.data[self.time_idx,:,::-1,:]
-        self.PHI = self.data.phi.data[self.time_idx,:,::-1,:]
-        self.VDF = self.data.vdf.data[self.time_idx,:,::-1,:]
+        self.ENERGY = self.data.energy.data[self.time_idx,:,:,:]
+        self.THETA = self.data.theta.data[self.time_idx,:,:,:]
+        self.PHI = self.data.phi.data[self.time_idx,:,:,:]
+        self.VDF = self.data.vdf.data[self.time_idx,:,:,:]

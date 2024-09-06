@@ -37,7 +37,7 @@ def find_gyroaxis(DATA, time_idx, threshold=-3, TH=45, Nrows=4, Ncols=8, makeplo
     if(makeplot):
         # making the polar cap extent in degrees
         clock_angle = np.linspace(0, 2 * np.pi, 100)
-        x_cap, y_cap = mu_phi + TH * np.cos(clock_angle), mu_theta + TH * np.sin(clock_angle)
+        x_cap, y_cap = mu_phi + TH * np.cos(clock_angle), mu_theta - 90 + TH * np.sin(clock_angle)
 
         # plotting the effective centroid in all shells
         for axs in ax.flatten():
@@ -46,7 +46,7 @@ def find_gyroaxis(DATA, time_idx, threshold=-3, TH=45, Nrows=4, Ncols=8, makeplo
             # axs.set_xlim([DATA.PHI.min(),DATA.PHI.max()])
             # axs.set_ylim([DATA.THETA.min(),DATA.THETA.max()])
             axs.set_xlim([0, 360])
-            axs.set_ylim([0, 180])
+            axs.set_ylim([-90, 90])
             axs.set_aspect('equal')
 
         plt.subplots_adjust(top=0.96, bottom=0.05, left=0.03, right=0.99, wspace=0.05, hspace=0.05)
@@ -257,20 +257,20 @@ def Gauss_2dg(data, error=None, mask=None):
     return gfit.x_mean_1.value, gfit.y_mean_1.value, gfit(x, y)
 
 def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, logvv, gauss, x_cen, y_cen, threshold):
-    vmin, vmax = 1.0, 7 #logvv.min(), logvv.max()
+    vmin, vmax = 1, 7 #logvv.min(), logvv.max()
 
-    im = ax.pcolormesh(pp_orig, tt_orig, logvv, cmap='BuPu', rasterized=True, vmin=vmin, vmax=vmax)
+    im = ax.pcolormesh(pp_orig, 90 - tt_orig, logvv, cmap='plasma', rasterized=True, vmin=vmin, vmax=vmax)
     # im = ax.pcolormesh(logvv, cmap='seismic', rasterized=True, vmin=vmin, vmax=vmax)
 
     # plotting the 2D contours of the fitted Gaussian
     levels = np.linspace(0, 8, 8)
-    ax.contour(pp_orig, tt_orig, gauss, colors='k', linestyles='dashed', linewidths=1, alpha=0.5, levels=levels)
+    ax.contour(pp_orig, 90 - tt_orig, gauss, colors='k', linestyles='dashed', linewidths=1, alpha=0.5, levels=levels)
     # ax.contour(gauss, colors='k', linestyles='dashed', linewidths=1, alpha=0.5, levels=levels)
-    ax.text(0.99, 0.95, f'({x_cen:.2f}, {y_cen:.2f})', transform=ax.transAxes,
-            va='top', ha='right', color='white')
+    ax.text(0.99, 0.95, f'({x_cen:.2f}, {y_cen - 90:.2f})', transform=ax.transAxes,
+            va='top', ha='right', color='black')
     ax.text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax.transAxes,
             va='bottom', ha='left', color='red', fontweight='bold')
-    ax.plot(y_cen, x_cen, 'xw')
+    ax.plot(y_cen, x_cen - 90, 'xw')
 
     plt.figure()
     img = plt.contourf(gauss/gauss.max(), cmap='gnuplot2', levels=[0.1, 1])
