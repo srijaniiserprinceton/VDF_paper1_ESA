@@ -41,6 +41,7 @@ def reconstruct_from_PSP():
 def reconstruct_from_MMS():
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
+    # sys.exit()
     
     #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
     StepI_bundle = sph2slep.get_StepI_dict(mu_phi, mu_theta, TH, DATA.PHI[0,:,0], DATA.THETA[0,0], instrument=instrument)
@@ -67,7 +68,7 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'PSP-SPAN-MT'        # currently we have 'PSP-SPAN' and 'MMS' (under construction)
+    instrument = 'MMS'        # currently we have 'PSP-SPAN' and 'MMS' (under construction)
     makeplot = True                # whether we want to save the diagnostic plots
     TH = 85                        # the angular radius of the polar cap [in degrees]
     iterative_fit = False          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
@@ -116,4 +117,5 @@ if __name__=='__main__':
 
         # try:
         reconstruct_func()
+        sys.exit()
         # except: continue
