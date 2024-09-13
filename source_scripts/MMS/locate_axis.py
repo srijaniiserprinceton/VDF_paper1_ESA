@@ -160,7 +160,8 @@ def without_plot(DATA, Nrows, Ncols):
             # finding the centroid and the angular extend for this shell upto a given threshold
             # x_cen, y_cen = centroid_2dg(np.roll(np.log10(vv), 16))
             logvv = np.roll(logvv, -(16 - int(x_cen)), axis=0)
-            x_cen, y_cen, gauss = Gauss_2dg(logvv, 16)
+            # x_cen, y_cen, gauss = Gauss_2dg(logvv, 16)
+            x_cen, y_cen = 0, 0
 
             # the number of bins which are non-zero in an energy shell
             Intensity = np.sum(vv[~np.isnan(vv)])

@@ -113,12 +113,12 @@ class VDF_rec_polarcaps:
         self.lon_hr = np.asarray(lon_hr)
         self.lat_hr = np.asarray(lat_hr)
 
-        
+        '''
         # keeping only until the Shannon number
         N2D = np.argmin(np.abs(self.V_hr - 0.5))
         self.G_hr = self.G_hr[:N2D]
         self.V_hr = self.V_hr[:N2D]
-        
+        '''
 
     def gyrotropic_recon_3D_VDF_MMS(self):
         # if(self.makeplot): fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)

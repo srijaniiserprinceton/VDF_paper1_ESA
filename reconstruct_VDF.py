@@ -17,7 +17,7 @@ def reconstruct_from_PSP():
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, bslopes[time_idx], vars[time_idx],
                                                                 TH=TH, Nrows=4, Ncols=8, makeplot=True)
-    return None
+    # return None
     
     #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
     StepI_bundle = sph2slep.get_StepI_dict(mu_phi, mu_theta, TH, DATA.PHI[0,:,0], DATA.THETA[0,0], instrument=instrument)
@@ -41,6 +41,7 @@ def reconstruct_from_PSP():
 def reconstruct_from_MMS():
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
+    # return None
     # sys.exit()
     
     #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
