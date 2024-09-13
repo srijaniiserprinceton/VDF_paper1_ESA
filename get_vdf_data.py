@@ -6,6 +6,11 @@ import cdflib
 
 from pathlib import Path
 
+"""
+Update: Fixed the init routines.
+"""
+
+
 def _get_psp_vdf(trange, CREDENTIALS=None):
     '''
     Get and download the latest version of PSP data. 
@@ -55,12 +60,38 @@ def _get_solo_vdf(trange):
     files = pyspedas.solo.swa(trange, datatype='pas-vdf', level='l2', notplot=True, downloadonly=True, time_clip=True)
     return(files)
 
-def init_solo_vdf(filename):
+def init_solo_vdf(trange, CLIP=False):
+    '''
+    Loads in Solar orbiter data for a given time range. 
+
+    Calls - _get_solo_vdf - a pre-selected PySpedas load routine.
+
+    Parameters:
+    -----------
+    trange - list of datetime objects or strings
+             2 element list of times
+    
+    Kwargs:
+    -------
+    CLIP - Boolean True or False, (Default = False)
+           Determines if data output array is clipped to times in trange
+
+    Returns:
+    --------
+    xr_ds - xarray.Dataset 
+            Formated dataset.
+    '''
+
     # Constants
     mass_p = 0.010438870        # eV/(km^2/s^2)
     charge_p = 1
 
-    xr_data = cdflib.cdf_to_xarray(filename)
+    files = _get_solo_vdf(trange)
+
+    if len(files) > 1:
+        xr_data = xr.concat([cdflib.cdf_to_xarray(f) for f in files], dim='Epoch')
+    else:
+        xr_data = cdflib.cdf_to_xarray(*files)
 
     # Get the instrument time
     xr_time_object = cdflib.epochs_astropy.CDFAstropy.convert_to_astropy(xr_data.Epoch.data)
@@ -68,6 +99,19 @@ def init_solo_vdf(filename):
 
     # Keep the unix time as a check
     unix_time = xr_time_object.utc.unix
+
+    # Now swap xr_data.Epoch to be in terms of time
+    xr_data['Epoch'] = xr_time_array
+
+    # Clip the dataset if CLIP flag is set to be true.
+    if CLIP is True:
+        xr_data['unix_time'] = xr.DataArray(unix_time, dims=['Epoch'], coords=dict(Epoch = xr_time_array), attrs={'units' : 'time', 'description':'Unix time'}) 
+        xr_data = xr_data.sel(Epoch=slice(trange[0], trange[-1]))
+
+        xr_time_array = xr_data.Epoch.data
+        unix_time = xr_data.unix_time.data
+
+        # print(f'data has been clipped. Len of unix_time = {len(unix_time)}. Len of xr_time_array = {len(xr_time_array)}')
 
     # Get the solo orbiter VDF
     vdf = xr_data.vdf.data
@@ -108,11 +152,10 @@ def init_solo_vdf(filename):
                         'vdf' : xr_vdf
                        },
                        attrs={'SO_description' : 'SOLO data recast into proper format. VDF unit is in s^3/m^6.'})
-    
+       
     return(xr_ds)
 
-
-def init_mms_vdf(filename):
+def init_mms_vdf(trange, probe='1'):
     '''
     Parameters:
     -----------
@@ -128,8 +171,10 @@ def init_mms_vdf(filename):
     mass_p = 0.010438870
     charge_p = 1
 
+    files = _get_mms_vdf(trange, probe)
+
     # List of path names
-    filestem = Path(filename).stem      # Get the file stem away from the path.
+    filestem = Path(files[0]).stem      # Get the file stem away from the path.
     parts = filestem.split('_')         # List of the split segments of filestem
 
     probe, inst, data_rate, level, product, timestamp, version = parts
@@ -141,7 +186,11 @@ def init_mms_vdf(filename):
     phi_preamble = f'{probe}_'+str(product.split('-')[0])+f'_phi_{data_rate}'
     print(dist_preamble)
 
-    xr_data = cdflib.cdf_to_xarray(filename)
+    if len(files) > 1:
+        xr_data = xr.concat([cdflib.cdf_to_xarray(f) for f in files], dim='Epoch')
+    else:
+        xr_data = cdflib.cdf_to_xarray(*files)
+    
 
     # Get the instrument time
     xr_time_object = cdflib.epochs_astropy.CDFAstropy.convert_to_astropy(xr_data.Epoch.data)
@@ -196,7 +245,7 @@ def init_mms_vdf(filename):
     
     return(xr_ds)
 
-def init_psp_vdf(filename):
+def init_psp_vdf(trange, CREDENTIALS=None, CLIP=False):
     '''
     Parameters:
     -----------
@@ -212,7 +261,12 @@ def init_psp_vdf(filename):
     mass_p = 0.010438870        # eV/(km^2/s^2)
     charge_p = 1
 
-    xr_data = cdflib.cdf_to_xarray(filename)
+    files = _get_psp_vdf(trange, CREDENTIALS)
+
+    if len(files) > 1:
+        xr_data = xr.concat([cdflib.cdf_to_xarray(f) for f in files], dim='Epoch')
+    else:
+        xr_data = cdflib.cdf_to_xarray(*files)
 
     # Get the instrument time
     xr_time_object = cdflib.epochs_astropy.CDFAstropy.convert_to_astropy(xr_data.Epoch.data)
@@ -220,6 +274,16 @@ def init_psp_vdf(filename):
 
     # Keep the unix time as a check
     unix_time = xr_data.TIME.data
+
+    # Now swap xr_data.Epoch to be in terms of time
+    xr_data['Epoch'] = xr_time_array
+    # Clip the dataset if CLIP flag is set to be true.
+    if CLIP is True:
+        xr_data = xr_data.sel(Epoch=slice(trange[0], trange[-1]))
+
+        xr_time_array = xr_data.Epoch.data
+        unix_time = xr_data.TIME.data
+        print(f'{len(xr_time_array)}')
 
     # Differential energy flux taken from PSP
     energy_flux = xr_data.EFLUX.data
@@ -293,18 +357,15 @@ def save_vdf_data(trange, spacecraft, PROBE='1', CREDENTIALS=None):
                  User credentials in the above format for unrealeased data. Only used for the PSP data.
     '''
     if spacecraft == 'PSP':
-        files   = _get_psp_vdf(trange, CREDENTIALS=CREDENTIALS)
-        dataset = init_psp_vdf(files[0])
+        dataset = init_psp_vdf(trange, CREDENTIALS=CREDENTIALS, CLIP=False)
         cdflib.xarray_to_cdf(dataset, f'./input_data_files/PSP_{trange[0][:10]}_VDFs.cdf')
 
     if spacecraft == 'MMS':
-        files   = _get_mms_vdf(trange, probe=PROBE)
-        dataset = init_mms_vdf(files[0])
+        dataset = init_mms_vdf(trange, probe=PROBE)
         cdflib.xarray_to_cdf(dataset, f'./input_data_files/MMS_{trange[0][:10]}_VDFs.cdf')
 
     if spacecraft == 'SO':
-        files = _get_solo_vdf(trange)
-        dataset = init_solo_vdf(files[0])
+        dataset = init_solo_vdf(trange, CLIP=False)
 
         # Since Solar Orbiter data sets are large we need to save them in chunks
         chunks = []
@@ -330,4 +391,3 @@ if __name__ == "__main__":
     trange = ['2020-07-17/00:00:00', '2020-07-17/02:57:00']
     # saving the .cdf file with the formatted VDF from desired time interval
     save_vdf_data(trange, spacecraft='SO')
-

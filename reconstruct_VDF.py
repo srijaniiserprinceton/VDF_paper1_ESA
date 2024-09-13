@@ -101,7 +101,7 @@ if __name__=='__main__':
     sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian = import_script.import_instrument_scripts(instrument)
 
     Ntimes = data.energy.data.shape[0]
-    for time_idx in tqdm(range(0,301)):
+    for time_idx in tqdm(range(0,25)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
         # time_idx = 0         # time index of VDF to be reconstructed
 
