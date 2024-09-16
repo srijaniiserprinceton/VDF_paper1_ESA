@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 func = np.vectorize(datetime.utcfromtimestamp)
 
 from source_scripts import import_script
+from source_scripts import misc_functions as misc_funcs
 
 def reconstruct_from_PSP():
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
@@ -52,8 +53,8 @@ def reconstruct_from_MMS():
                                                         Lmin=Lmin, Lmax=Lmax, rcond=rcond_polcap, makeplot=True, instrument=instrument)
 
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
-    VX, VY, VZ, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle, NEmesh=100, spline_order=3)
-    return VX, VY, VZ, VDF_3D_rec, StepII_bundle
+    lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle, NEmesh=100, spline_order=3)
+    return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
 
     # saving the final reconstructed VDF for post-processing calculations
     VDF_rec_dict = {}
@@ -104,7 +105,7 @@ if __name__=='__main__':
     sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_final = import_script.import_instrument_scripts(instrument)
 
     Ntimes = data.energy.data.shape[0]
-    for time_idx in tqdm(range(1040, 1041)):
+    for time_idx in tqdm(range(533, 534)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
         # time_idx = 0         # time index of VDF to be reconstructed
 
@@ -119,14 +120,18 @@ if __name__=='__main__':
         if(ignore_last_anode):
             DATA.VDF[:,-1,:] = np.nan
 
-        VX, VY, VZ, VDF_3D_rec, StepII_bundle = reconstruct_func()
-        np.save('output_data_files/VX.npy', VX)
-        np.save('output_data_files/VY.npy', VY)
-        np.save('output_data_files/VZ.npy', VZ)
+        lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func()
+        np.save('output_data_files/lnE_mesh.npy', lnE_mesh)
+        np.save('output_data_files/theta_mesh.npy', theta_mesh)
+        np.save('output_data_files/phi_mesh.npy', phi_mesh)
         np.save('output_data_files/VDF_3D_rec.npy', VDF_3D_rec)
 
+        # converting the grid to unstructured Cartesian
+        VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh)
+
         # plotting the 2D slice
+        plt.style.use('dark_background')
         plt.figure()
-        plt.contourf(VX[:,50], VY[:,50], VDF_3D_rec[:,50], vmin=VDF_3D_rec.max()-7, cmap='gnuplot2')
+        plt.pcolormesh(VX[:,50], VY[:,50], VDF_3D_rec[:,50], vmin=VDF_3D_rec.max()-7, cmap='inferno')
         plt.gca().set_aspect('equal')
         sys.exit()
