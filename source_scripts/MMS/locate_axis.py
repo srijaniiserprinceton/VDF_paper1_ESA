@@ -1,6 +1,5 @@
 import warnings
 import numpy as np
-from scipy import interpolate
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.modeling.models import Const2D, Gaussian2D
 from astropy.utils.exceptions import AstropyUserWarning

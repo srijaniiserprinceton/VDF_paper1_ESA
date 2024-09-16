@@ -40,32 +40,21 @@ class VDF_rec_polarcaps:
         self.VDF_2D = np.zeros((self.N_Eshells, self.N_lat_hr))
         self.fine_from_fine = np.zeros((self.N_Eshells, self.N_lat_hr, self.N_lon_hr))
 
-        # performing iterative fitting
-        if(iterative_fit):
-            for L in range(self.Lmin, self.Lmax + 1):
-                self.gen_Slepians_on_polarcap(L)
-                if(L == self.Lmin):
-                    self.G_hr = np.reshape(self.G_hr[0,:,:], (1, self.N_lat_hr, self.N_lon_hr))
-                else:
-                    self.G_hr = self.G_hr[1:,:,:]
-                # performing the iterative fitting with the chosen eigenfunctions
-                self.gyrotropic_recon_3D_VDF()
+        self.gen_Slepians_on_polarcap(self.Lmax)
+        self.coeffs_hr = np.zeros((self.N_Eshells, len(self.G_hr)))
 
-        else:
-            self.gen_Slepians_on_polarcap(self.Lmax)
-            print(self.lon_hr, self.lat_hr)
-            plt.figure()
-            plt.pcolormesh(self.lon_hr, self.lat_hr, self.G_hr[1])
-            # plotting the circle around the domain
-            theta_circ = np.linspace(0, 2*np.pi, 100)
-            xcirc, ycirc = self.TH * np.cos(theta_circ) + self.phi0, self.TH * np.sin(theta_circ) + (self.theta0-90)
-            plt.plot(xcirc, ycirc, '--r')
-            plt.scatter(self.phi0, self.theta0 - 90, marker='x', color='white')
-            plt.text(0.05, 0.05, f'({self.phi0:.2f}, {self.theta0:.2f}) [eV]', transform=plt.gca().transAxes,
-                     va='bottom', ha='left', color='black', fontweight='bold')
-            plt.gca().set_aspect('equal')
-            plt.colorbar()
-            self.gyrotropic_recon_3D_VDF_MMS()
+        plt.figure()
+        plt.pcolormesh(self.lon_hr, self.lat_hr, self.G_hr[1])
+        # plotting the circle around the domain
+        theta_circ = np.linspace(0, 2*np.pi, 100)
+        xcirc, ycirc = self.TH * np.cos(theta_circ) + self.phi0, self.TH * np.sin(theta_circ) + (self.theta0-90)
+        plt.plot(xcirc, ycirc, '--r')
+        plt.scatter(self.phi0, self.theta0 - 90, marker='x', color='white')
+        plt.text(0.05, 0.05, f'({self.phi0:.2f}, {self.theta0:.2f}) [eV]', transform=plt.gca().transAxes,
+                    va='bottom', ha='left', color='black', fontweight='bold')
+        plt.gca().set_aspect('equal')
+        plt.colorbar()
+        self.gyrotropic_recon_3D_VDF_MMS()
 
         # the final total fitted plot
         if(self.makeplot):
@@ -113,12 +102,14 @@ class VDF_rec_polarcaps:
         self.lon_hr = np.asarray(lon_hr)
         self.lat_hr = np.asarray(lat_hr)
 
+        
         '''
         # keeping only until the Shannon number
         N2D = np.argmin(np.abs(self.V_hr - 0.5))
         self.G_hr = self.G_hr[:N2D]
         self.V_hr = self.V_hr[:N2D]
         '''
+
 
     def gyrotropic_recon_3D_VDF_MMS(self):
         # if(self.makeplot): fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)
@@ -150,10 +141,10 @@ class VDF_rec_polarcaps:
             M_hr = G_nonan_hr @ G_nonan_hr.T 
             __, self.S_hr, __ = np.linalg.svd(M_hr)
             I_hr = np.identity(M_hr.shape[0])
-            coeffs_hr = np.linalg.inv(G_nonan_hr @ G_nonan_hr.T +  self.S_hr.max() * self.rcond * I_hr) @ G_nonan_hr @ img_hr[~nan_mask_hr]
+            self.coeffs_hr[E_idx] = np.linalg.inv(G_nonan_hr @ G_nonan_hr.T +  self.S_hr.max() * self.rcond * I_hr) @ G_nonan_hr @ img_hr[~nan_mask_hr]
 
             # reconstructing from the polar Slepians and plotting
-            fine_from_finecoefs = np.dot(np.moveaxis(self.G_hr, 0, -1), coeffs_hr)
+            fine_from_finecoefs = np.dot(np.moveaxis(self.G_hr, 0, -1), self.coeffs_hr[E_idx])
             self.fine_from_fine[E_idx] += fine_from_finecoefs
 
             # if(self.makeplot): self.plot_polar_rec_VDF(E_idx, ax[E_idx//8, E_idx%8], fine_from_finecoefs)
