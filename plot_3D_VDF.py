@@ -52,7 +52,7 @@ vmin = vmax-7
 
 fig1 = go.Figure(data=[slice_z, slice_y1, slice_y2])
 fig1.update_layout(
-         title_text='Slices in volumetric data', 
+         title_text='Slices in reconstructed VDF', 
          font=dict(color="white"
          ),
          title_x=0.5,

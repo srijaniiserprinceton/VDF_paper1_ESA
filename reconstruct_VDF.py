@@ -105,7 +105,7 @@ if __name__=='__main__':
     sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_final = import_script.import_instrument_scripts(instrument)
 
     Ntimes = data.energy.data.shape[0]
-    for time_idx in tqdm(range(533, 534)):
+    for time_idx in tqdm(range(1320, 1321)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
         # time_idx = 0         # time index of VDF to be reconstructed
 
@@ -127,11 +127,13 @@ if __name__=='__main__':
         np.save('output_data_files/VDF_3D_rec.npy', VDF_3D_rec)
 
         # converting the grid to unstructured Cartesian
-        VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh)
+        VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh, savegrids=True)
 
         # plotting the 2D slice
         plt.style.use('dark_background')
         plt.figure()
         plt.pcolormesh(VX[:,50], VY[:,50], VDF_3D_rec[:,50], vmin=VDF_3D_rec.max()-7, cmap='inferno')
         plt.gca().set_aspect('equal')
+
+        import plot_3D_VDF
         sys.exit()
