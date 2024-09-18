@@ -8,3 +8,4 @@
 *.mat
 __pycache__
 *.vtu
+*.zip
