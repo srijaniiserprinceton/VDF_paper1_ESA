@@ -10,14 +10,17 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt; plt.ion()
 import matplotlib.cm as cm
+from datetime import datetime, timedelta
+func = np.vectorize(datetime.utcfromtimestamp)
 
 from source_scripts import import_script
+from source_scripts import misc_functions as misc_funcs
 
 def reconstruct_from_PSP():
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, bslopes[time_idx], vars[time_idx],
                                                                 TH=TH, Nrows=4, Ncols=8, makeplot=True)
-    return None
+    # return None
     
     #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
     StepI_bundle = sph2slep.get_StepI_dict(mu_phi, mu_theta, TH, DATA.PHI[0,:,0], DATA.THETA[0,0], instrument=instrument)
@@ -27,7 +30,7 @@ def reconstruct_from_PSP():
                                                         Lmin=Lmin, Lmax=Lmax, rcond=rcond_polcap, makeplot=True, instrument=instrument)
     sys.exit()
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
-    VDF_2D_rec = VDF_rec_cartesian.VDF_rec_cartesian(StepII_bundle, time_idx, N=Ncart, Vmin_shell=Vmin_shell,
+    VDF_2D_rec = VDF_rec_final.VDF_rec_cartesian(StepII_bundle, time_idx, N=Ncart, Vmin_shell=Vmin_shell,
                                                         rcond=rcond_cart, makeplot=makeplot)
     # saving the final reconstructed VDF for post-processing calculations
     VDF_rec_dict = {}
@@ -41,7 +44,6 @@ def reconstruct_from_PSP():
 def reconstruct_from_MMS():
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
-    # sys.exit()
     
     #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
     StepI_bundle = sph2slep.get_StepI_dict(mu_phi, mu_theta, TH, DATA.PHI[0,:,0], DATA.THETA[0,0], instrument=instrument)
@@ -49,10 +51,11 @@ def reconstruct_from_MMS():
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
     StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps(DATA, StepI_bundle, time_idx, iterative_fit=iterative_fit,
                                                         Lmin=Lmin, Lmax=Lmax, rcond=rcond_polcap, makeplot=True, instrument=instrument)
-    sys.exit()
+
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
-    VDF_2D_rec = VDF_rec_cartesian.VDF_rec_cartesian(StepII_bundle, time_idx, N=Ncart, Vmin_shell=Vmin_shell,
-                                                        rcond=rcond_cart, makeplot=makeplot)
+    lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle, NEmesh=100, spline_order=3)
+    return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
+
     # saving the final reconstructed VDF for post-processing calculations
     VDF_rec_dict = {}
     VDF_rec_dict['VDF_2D_rec'] = VDF_2D_rec.VDF_Sleprec
@@ -91,16 +94,18 @@ if __name__=='__main__':
         filename = './input_data_files/MMS_2016-01-11_VDFs.cdf'
         reconstruct_func = reconstruct_from_MMS
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
+    times = func(data.unix_time.values)
+    times = (times - times[0]) / timedelta(seconds=1)
 
     # loading the B-slopes
     bslopes = np.load('./input_data_files/slopes.npy')
     vars = np.load('./input_data_files/vars.npy')
 
     # importing scripts based on which instrument we are using
-    sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_cartesian = import_script.import_instrument_scripts(instrument)
+    sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_final = import_script.import_instrument_scripts(instrument)
 
     Ntimes = data.energy.data.shape[0]
-    for time_idx in tqdm(range(0,25)):
+    for time_idx in tqdm(range(1320, 1321)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
         # time_idx = 0         # time index of VDF to be reconstructed
 
@@ -115,7 +120,20 @@ if __name__=='__main__':
         if(ignore_last_anode):
             DATA.VDF[:,-1,:] = np.nan
 
-        # try:
-        reconstruct_func()
+        lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func()
+        np.save('output_data_files/lnE_mesh.npy', lnE_mesh)
+        np.save('output_data_files/theta_mesh.npy', theta_mesh)
+        np.save('output_data_files/phi_mesh.npy', phi_mesh)
+        np.save('output_data_files/VDF_3D_rec.npy', VDF_3D_rec)
+
+        # converting the grid to unstructured Cartesian
+        VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh, savegrids=True)
+
+        # plotting the 2D slice
+        plt.style.use('dark_background')
+        plt.figure()
+        plt.pcolormesh(VX[:,50], VY[:,50], VDF_3D_rec[:,50], vmin=VDF_3D_rec.max()-7, cmap='inferno')
+        plt.gca().set_aspect('equal')
+
+        import plot_3D_VDF
         sys.exit()
-        # except: continue
