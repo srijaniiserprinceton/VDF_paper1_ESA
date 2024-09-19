@@ -7,7 +7,11 @@ import cdflib
 import xarray as xr
 import matplotlib.pyplot as plt
 
-def trap_moments(vdf, velocity, theta, phi):
+
+from scipy.integrate import simps
+from calculations.merge_vdf import merge_vdf_data
+
+def calc_moments(vdf, velocity, theta, phi, METHOD='trapz'):
     """
     This function uses the np.trapz function to perform the integration
     
@@ -36,9 +40,9 @@ def trap_moments(vdf, velocity, theta, phi):
         The corresponding pressure tensor. 
     """
 
-    if np.max(theta) >= 2*np.pi:
+    if np.max(theta) > 2. * np.pi:
         theta = np.radians(theta)
-    if np.max(phi) >= 2. * np.pi:
+    if np.max(phi) > 4. * np.pi:
         phi = np.radians(phi)
 
     sinT = np.sin(theta)
@@ -47,17 +51,22 @@ def trap_moments(vdf, velocity, theta, phi):
     sinP = np.sin(phi)
     cosP = np.cos(phi)
 
+    if METHOD == 'trapz':
+        integral = np.trapz
+    if METHOD == 'simps':
+        integral = simps
+
     # integrate over phi
-    density = np.trapz(np.trapz(np.trapz(vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
+    density = integral(integral(integral(vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
 
     # Convert to Cartesian velocity
     vx = -velocity[:,None,None] * cosP[None, None, :] * sinT[None, :,None]
     vy = -velocity[:,None,None] * sinP[None, None, :] * sinT[None, :,None]
     vz = -velocity[:,None,None]                       * cosT[None, :,None]
 
-    ux = np.trapz(np.trapz(np.trapz(vx * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)/density
-    uy = np.trapz(np.trapz(np.trapz(vy * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)/density
-    uz = np.trapz(np.trapz(np.trapz(vz * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)/density
+    ux = integral(integral(integral(vx * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)/density
+    uy = integral(integral(integral(vy * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)/density
+    uz = integral(integral(integral(vz * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)/density
 
     uvec = np.array([ux, uy, uz])
 
@@ -65,13 +74,13 @@ def trap_moments(vdf, velocity, theta, phi):
     vy_p = vy - uy
     vz_p = vz - uz
 
-    pxx = np.trapz(np.trapz(np.trapz(vx_p**2 * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
-    pyy = np.trapz(np.trapz(np.trapz(vy_p**2 * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
-    pzz = np.trapz(np.trapz(np.trapz(vz_p**2 * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
+    pxx = integral(integral(integral(vx_p**2 * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
+    pyy = integral(integral(integral(vy_p**2 * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
+    pzz = integral(integral(integral(vz_p**2 * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
 
-    pxy = np.trapz(np.trapz(np.trapz(vx_p * vy_p * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
-    pxz = np.trapz(np.trapz(np.trapz(vx_p * vz_p * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
-    pyz = np.trapz(np.trapz(np.trapz(vy_p * vz_p * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
+    pxy = integral(integral(integral(vx_p * vy_p * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
+    pxz = integral(integral(integral(vx_p * vz_p * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
+    pyz = integral(integral(integral(vy_p * vz_p * vdf, x=phi) * sinT, x=theta) * velocity**2, x=velocity)
 
     p_mat = np.array([[pxx, pxy, pxz],
                       [pxy, pyy, pyz],
@@ -164,12 +173,20 @@ def spher_moments(vdf, velocity, theta, phi):
 # NOTE : Below is just a simple testing script for the moment calcuations on MMS.
 if __name__ == "__main__":
     # Load in the original VDF
-    init_ds   = cdflib.cdf_to_xarray('/home/michael/Research/VDF_paper1_ESA/input_data_files/MMS_2016-01-11_VDFs.cdf')
+    init_ds   = cdflib.cdf_to_xarray('/home/michael/Research/VDF_paper1_ESA/input_data_files/MMS_2016-01-11_VDFs.cdf', to_datetime=True)
 
-    orig_energy = init_ds.energy.data[733, :, 0, 0]
-    orig_theta  = init_ds.theta.data[733, 0, 0, :]
-    orig_phi    = init_ds.phi.data[733, 0, :, 0]
-    orig_vdf    = init_ds.vdf.data[733, :, :, :] * 1e12
+    time        = init_ds.time.data
+    orig_energy = init_ds.energy.data[533, :, 0, 0]
+    orig_theta  = init_ds.theta.data[533, 0, 0, :]
+    orig_phi    = init_ds.phi.data[533, 0, :, 0]
+    orig_vdf    = init_ds.vdf.data[533, :, :, :] * 1e12
+
+    tmerge, vdf_merge, energy_merged, vel_merged, theta_merged, phi_merged = merge_vdf_data(
+        time, np.transpose(init_ds.vdf.data, [0, 1, 3, 2]), init_ds.energy.data[:, :, 0, 0], 
+        13.85*np.sqrt(init_ds.energy.data[:, :, 0, 0]), init_ds.theta.data[:, 0, 0, :], init_ds.phi.data[:, 0, :, 0]
+    )
+
+    
 
     # Add the extra phi dimension
     new_phi = np.append(orig_phi, orig_phi[-1] + 11.25)     # This is in degrees.
