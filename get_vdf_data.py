@@ -155,7 +155,7 @@ def init_solo_vdf(trange, CLIP=False):
        
     return(xr_ds)
 
-def init_mms_vdf(trange, probe='1'):
+def init_mms_vdf(trange, probe='1', SUPPORT=None):
     '''
     Parameters:
     -----------
@@ -181,6 +181,7 @@ def init_mms_vdf(trange, probe='1'):
 
     # Generate the preamble
     dist_preamble = f'{probe}_'+str(product.split('-')[0])+f'_dist_{data_rate}'
+    disterr_preamble = f'{probe}_'+str(product.split('-')[0])+f'_disterr_{data_rate}'
     energy_preamble = f'{probe}_'+str(product.split('-')[0])+f'_energy_{data_rate}'
     theta_preamble = f'{probe}_'+str(product.split('-')[0])+f'_theta_{data_rate}'
     phi_preamble = f'{probe}_'+str(product.split('-')[0])+f'_phi_{data_rate}'
@@ -200,7 +201,8 @@ def init_mms_vdf(trange, probe='1'):
     unix_time = xr_time_object.utc.unix
 
     # Distribution function
-    dist = xr_data[f'{dist_preamble}']
+    dist    = xr_data[f'{dist_preamble}']
+    disterr = xr_data[f'{disterr_preamble}']
 
     energy = xr_data[f'{energy_preamble}']
     theta  = xr_data[f'{theta_preamble}']
@@ -218,12 +220,14 @@ def init_mms_vdf(trange, probe='1'):
     theta_unsort = np.repeat(np.repeat(np.repeat(theta.data, 1399).reshape(16, 1399), 32).reshape(16, 1399, 32), 32).reshape(16, 1399, 32, 32)  # Theta, Time, Energy, Phi
 
     # Convert data to uniform shape (Time, Energy, Phi, Theta)
-    energy_sort = energy_unsort  # No-need to convert order
-    phi_sort    = np.transpose(phi_unsort, [0, 2, 1, 3])
-    theta_sort  = np.transpose(theta_unsort, [1, 2, 3, 0])
-    dist_sort   = np.transpose(dist, [0, 3, 1, 2])
+    energy_sort  = energy_unsort  # No-need to convert order
+    phi_sort     = np.transpose(phi_unsort, [0, 2, 1, 3])
+    theta_sort   = np.transpose(theta_unsort, [1, 2, 3, 0])
+    dist_sort    = np.transpose(dist, [0, 3, 1, 2])
+    disterr_sort = np.transpose(disterr, [0, 3, 1, 2])
 
     vdf = dist_sort
+    vdf_err = disterr_sort
 
     # Generate the xarray dataArrays for each value we are going to pass
     xr_energy = xr.DataArray(energy_sort, dims = ['time', 'energy_dim', 'phi_dim', 'theta_dim'], coords = dict(time = xr_time_array, energy_dim = np.arange(32), phi_dim = np.arange(32), theta_dim = np.arange(16)), attrs={'units':'eV', 'fillval' : 'np.array([nan], dtype=float32)', 'validmin':'0.01', 'validmax' : '100000.', 'scale' : 'log'})
@@ -243,6 +247,10 @@ def init_mms_vdf(trange, probe='1'):
                        },
                        attrs={'description' : 'MMS data recast into proper format. VDF unit is in s^3/cm^6.'})
     
+    if SUPPORT:
+        xr_vdf_err = xr.DataArray(vdf_err, dims = ['time', 'energy_dim', 'phi_dim', 'theta_dim'], coords = dict(time = xr_time_array, energy_dim = np.arange(32), phi_dim = np.arange(32), theta_dim = np.arange(16)), attrs={'units':'s^3/cm^6', 'fillval' : 'np.array([nan], dtype=float32)', 'validmin':'0.001', 'validmax' : '1e+16', 'scale' : 'log'})
+        xr_ds['vdf_err'] = xr_vdf_err
+
     return(xr_ds)
 
 def init_psp_vdf(trange, CREDENTIALS=None, CLIP=False):
@@ -341,7 +349,7 @@ def init_psp_vdf(trange, CREDENTIALS=None, CLIP=False):
     
     return(xr_ds)
 
-def save_vdf_data(trange, spacecraft, PROBE='1', CREDENTIALS=None):
+def save_vdf_data(trange, spacecraft, PROBE='1', SUPPORT=None, CREDENTIALS=None):
     '''
     Saving VDF data in streamlined format to be used in the rest of the workflow.
 
@@ -361,8 +369,12 @@ def save_vdf_data(trange, spacecraft, PROBE='1', CREDENTIALS=None):
         cdflib.xarray_to_cdf(dataset, f'./input_data_files/PSP_{trange[0][:10]}_VDFs.cdf')
 
     if spacecraft == 'MMS':
-        dataset = init_mms_vdf(trange, probe=PROBE)
-        cdflib.xarray_to_cdf(dataset, f'./input_data_files/MMS_{trange[0][:10]}_VDFs.cdf')
+        dataset = init_mms_vdf(trange, probe=PROBE, SUPPORT=SUPPORT)
+        if SUPPORT:
+            cdflib.xarray_to_cdf(dataset, f'./input_data_files/MMS_{trange[0][:10]}_VDF_and_ERRs.cdf')
+        else:
+            cdflib.xarray_to_cdf(dataset, f'./input_data_files/MMS_{trange[0][:10]}_VDFs.cdf')
+        
 
     if spacecraft == 'SO':
         dataset = init_solo_vdf(trange, CLIP=False)
@@ -387,7 +399,7 @@ if __name__ == "__main__":
 
     # making the trange tuple
     # trange = [tstart, tend]
-    # trange = ['2016-01-11/00:57:04', '2016-01-11/01:57:04']
-    trange = ['2020-07-17/00:00:00', '2020-07-17/02:57:00']
+    trange = ['2016-01-11/00:57:04', '2016-01-11/01:57:04']
+    # trange = ['2020-07-17/00:00:00', '2020-07-17/02:57:00']
     # saving the .cdf file with the formatted VDF from desired time interval
-    save_vdf_data(trange, spacecraft='SO')
+    save_vdf_data(trange, spacecraft='MMS', PROBE='1', SUPPORT=True)
