@@ -185,7 +185,6 @@ def init_mms_vdf(trange, probe='1', SUPPORT=None):
     energy_preamble = f'{probe}_'+str(product.split('-')[0])+f'_energy_{data_rate}'
     theta_preamble = f'{probe}_'+str(product.split('-')[0])+f'_theta_{data_rate}'
     phi_preamble = f'{probe}_'+str(product.split('-')[0])+f'_phi_{data_rate}'
-    print(dist_preamble)
 
     if len(files) > 1:
         xr_data = xr.concat([cdflib.cdf_to_xarray(f) for f in files], dim='Epoch')
@@ -215,9 +214,9 @@ def init_mms_vdf(trange, probe='1', SUPPORT=None):
     LEN = dist.shape[0]
 
     # Now we have to expand dimensions such that the data arrays all match shapes.
-    energy_unsort = np.repeat(np.repeat(energy.data, 32).reshape(1399, 32, 32), 16).reshape(1399, 32, 32, 16)   # Time, Energy, Phi, Theta
-    phi_unsort = np.repeat(np.repeat(phi.data, 32).reshape(1399, 32, 32), 16).reshape(1399, 32, 32, 16)         # Time, Phi, Energy, Theta
-    theta_unsort = np.repeat(np.repeat(np.repeat(theta.data, 1399).reshape(16, 1399), 32).reshape(16, 1399, 32), 32).reshape(16, 1399, 32, 32)  # Theta, Time, Energy, Phi
+    energy_unsort = np.repeat(np.repeat(energy.data, phi_dim).reshape(LEN, energy_dim, phi_dim), theta_dim).reshape(LEN, energy_dim, phi_dim, theta_dim)   # Time, Energy, Phi, Theta
+    phi_unsort = np.repeat(np.repeat(phi.data, energy_dim).reshape(LEN, phi_dim, energy_dim), theta_dim).reshape(LEN, phi_dim, energy_dim, theta_dim)         # Time, Phi, Energy, Theta
+    theta_unsort = np.repeat(np.repeat(np.repeat(theta.data, LEN).reshape(theta_dim, LEN), energy_dim).reshape(theta_dim, LEN, energy_dim), phi_dim).reshape(theta_dim, LEN, energy_dim, phi_dim)  # Theta, Time, Energy, Phi
 
     # Convert data to uniform shape (Time, Energy, Phi, Theta)
     energy_sort  = energy_unsort  # No-need to convert order
