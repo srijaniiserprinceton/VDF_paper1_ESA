@@ -11,12 +11,13 @@ plt.ion()
 # imports from our custom package
 from . import fit_2D_gaussian as fit_gauss
 
-def find_gyroaxis(DATA, time_idx, threshold=-3, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
-    if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols, threshold)
-    else: phi_theta_cen = without_plot(DATA, Nrows, Ncols)
+def find_gyroaxis(rec_dict, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
+    if(makeplot): Eshell_info, fig, ax = with_plot(rec_dict, time_idx, Nrows, Ncols)
+    else: Eshell_info = without_plot(rec_dict, Nrows, Ncols)
 
-    phi_theta_cen = np.asarray(phi_theta_cen)
+    Eshell_info = np.asarray(Eshell_info)
 
+    '''
     # removing the shells with less than 0.5 counts of the max
     weight_mask = phi_theta_cen[:,1] / np.max(phi_theta_cen[:,1]) >= 0.7
 
@@ -32,18 +33,18 @@ def find_gyroaxis(DATA, time_idx, threshold=-3, TH=45, Nrows=4, Ncols=8, makeplo
 
     # finding the largest TH
     TH = np.max(phi_theta_cen_purged[:,-1])
+    '''
+    mu_phi, mu_theta = rec_dict.ESA_PHI[time_idx,0,rec_dict.PHI_CEN_IDX,0],\
+                       rec_dict.ESA_THETA[time_idx,0,0,rec_dict.THETA_CEN_IDX]
 
     if(makeplot):
         # making the polar cap extent in degrees
         clock_angle = np.linspace(0, 2 * np.pi, 100)
-        x_cap, y_cap = mu_phi + TH * np.cos(clock_angle), mu_theta - 90 + TH * np.sin(clock_angle)
+        x_cap, y_cap = mu_phi + TH * np.cos(clock_angle), mu_theta + TH * np.sin(clock_angle)
 
         # plotting the effective centroid in all shells
         for axs in ax.flatten():
-            # axs.scatter(mu_phi, mu_theta, marker='o', color='white')
             axs.plot(x_cap, y_cap, '--r')
-            # axs.set_xlim([DATA.PHI.min(),DATA.PHI.max()])
-            # axs.set_ylim([DATA.THETA.min(),DATA.THETA.max()])
             axs.set_xlim([0, 360])
             axs.set_ylim([-90, 90])
             axs.set_aspect('equal')
@@ -56,13 +57,10 @@ def find_gyroaxis(DATA, time_idx, threshold=-3, TH=45, Nrows=4, Ncols=8, makeplo
         plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
         plt.suptitle(f'{time_idx}')
         plt.savefig(f'VDF_paper1_plots/VDF_MMS_polar_plot/{time_idx}.png')
-        # plt.close()
+        plt.close()
 
-    if(all_shell_info):
-        return mu_phi, mu_theta, phi_theta_cen
-    else: mu_phi, mu_theta
-
-def with_plot(DATA, time_idx, Nrows, Ncols, threshold):
+def with_plot(rec_dict, time_idx, Nrows, Ncols):
+    '''
     roll_idx_peak = []
 
     for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
@@ -97,80 +95,101 @@ def with_plot(DATA, time_idx, Nrows, Ncols, threshold):
     
         # finding the mean roll value
     roll_val = int(15 - np.mean(x_idx_cen))
+    '''
 
+    roll_val = rec_dict.PHI_CEN_IDX
     # rolling the vdf by that amount
-    DATA.VDF = np.roll(DATA.VDF, roll_val, axis=1)
+    rec_dict.VDF[time_idx] = np.roll(rec_dict.VDF[time_idx], roll_val, axis=1)
 
     fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
 
-    # levels chosen just to plot the 2D Gaussian over the VDF
-    levels = np.linspace(0, 7, 10)
-
     # making list to store the gyroaxis locations for each shell
-    phi_theta_cen = []
+    Eshell_info = []
 
     for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
         # finding the row and the column of the subplots
         row, col = i//Ncols, i%Ncols
-        # using try/except so that we can loop over the bad data shells with low counts
-        # try:
-        E = DATA.ENERGY[E_idx, :, :][0, 0]
-        tt_orig, pp_orig, vv = DATA.THETA[E_idx, :, :], DATA.PHI[E_idx, :, :], DATA.VDF[E_idx, :, :] 
-        xmin, xmax, ymin, ymax = tt_orig.min(), tt_orig.max(), pp_orig.min(), pp_orig.max()
-        if(np.sum(~np.isnan(vv)) < 10): continue
 
-        # finding the centroid and the angular extend for this shell upto a given threshold
+        E = rec_dict.ENERGY[time_idx, E_idx, :, :][0, 0]
+        
+        # note that for FPI, theta array stays the same at different times but phi array changes
+        tt_orig, pp_orig, vv = rec_dict.ESA_THETA[time_idx, E_idx, :, :],\
+                               rec_dict.ESA_PHI[time_idx, E_idx, :, :],\
+                               rec_dict.VDF[time_idx, E_idx, :, :]
+
+        # skipping plotting if there is zero counts in the E-shell
+        if(np.sum(~np.isnan(vv)) < 1): continue
+
+        # calculating the log and setting +\- inf to nan
         logvv = np.log10(vv)
         logvv = np.nan_to_num(logvv, posinf=np.nan, neginf=np.nan)
-
-        # moving pattern to the center by rolling it
-        x_cen, y_cen, gauss = Gauss_2dg(logvv)
-        # scaling the centers
-        x_cen = x_cen/16 * 180
-        y_cen = y_cen/32 * 360
 
         # the number of bins which are non-zero in an energy shell
         Intensity = np.sum(vv[~np.isnan(vv)])
 
         #------------------MAKING DIAGNOSTIC PLOTS IF REQUIRED-----------------------#
-        TH = plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, logvv, gauss, x_cen, y_cen, threshold)
+        TH = plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, logvv)
 
         # appending the located centers
-        phi_theta_cen.append([E, Intensity, x_cen, y_cen, 85])
+        Eshell_info.append([E, Intensity])
 
-        # except: continue
-
-    return phi_theta_cen, fig, ax
+    return Eshell_info, fig, ax
     
-def without_plot(DATA, Nrows, Ncols):
-    # making list to store the gyroaxis locations for each shell
-    phi_theta_cen = []
+def without_plot(rec_dict, Nrows, Ncols):
+    '''
+    roll_idx_peak = []
 
     for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
         # using try/except so that we can loop over the bad data shells with low counts
-        try:
-            E_idx = 15
-            # finding the row and the column of the subplots
-            row, col = i//Ncols, i%Ncols
-            # using try/except so that we can loop over the bad data shells with low counts
-            E = DATA.ENERGY[E_idx, :, :][0, 0]
-            tt_orig, pp_orig, vv = DATA.THETA[E_idx, :, :], DATA.PHI[E_idx, :, :], DATA.VDF[E_idx, :, :] 
+        # try:
+        vv = DATA.VDF[E_idx, :, :] 
+        if(np.sum(~np.isnan(vv)) < 10): continue
+        peak_idx_flat = np.argmax(vv)
+        roll_val = np.abs(15 - peak_idx_flat)
+        roll_idx_peak.append(roll_val)
 
-            # finding the centroid and the angular extend for this shell upto a given threshold
-            # x_cen, y_cen = centroid_2dg(np.roll(np.log10(vv), 16))
-            logvv = np.roll(logvv, -(16 - int(x_cen)), axis=0)
-            # x_cen, y_cen, gauss = Gauss_2dg(logvv, 16)
-            x_cen, y_cen = 0, 0
+        # except: continue
 
-            # the number of bins which are non-zero in an energy shell
-            Intensity = np.sum(vv[~np.isnan(vv)])
+    roll_val = int(15 - np.mean(x_idx_cen))
+    
+    # just to make consistent plotting
+    roll_val = 15 
 
-            # appending the located centers
-            phi_theta_cen.append([E, Intensity, x_cen, y_cen, TH])
-        
-        except: continue
+    # rolling the vdf by that amount
+    DATA.VDF = np.roll(DATA.VDF, roll_val, axis=1)
 
-    return phi_theta_cen
+    
+    x_idx_cen = []
+    for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
+        # using try/except so that we can loop over the bad data shells with low counts
+        # try:
+        vv = DATA.VDF[E_idx, :, :] 
+        if(np.sum(~np.isnan(vv)) < 10): continue
+        logvv = np.log10(vv)
+        logvv = np.nan_to_num(logvv, posinf=np.nan, neginf=np.nan)
+        x_cen, __ = centroid_2dg(logvv)
+        x_idx_cen.append(x_cen)
+
+        # except: continue
+    
+        # finding the mean roll value
+
+    roll_val = int(15 - np.mean(x_idx_cen))
+    '''
+
+    # making list to store the gyroaxis locations for each shell
+    Eshell_info = []
+
+    for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
+        E = DATA.ENERGY[E_idx, :, :][0, 0] 
+
+        # the number of bins which are non-zero in an energy shell
+        Intensity = np.sum(vv[~np.isnan(vv)])
+
+        # appending the located centers
+        Eshell_info.append([E, Intensity])
+
+    return Eshell_info
 
 def Gauss_2dg(data, error=None, mask=None):
     """
@@ -256,30 +275,8 @@ def Gauss_2dg(data, error=None, mask=None):
     gfit = fitter(g_init, x, y, data, weights=weights)
     return gfit.x_mean_1.value, gfit.y_mean_1.value, gfit(x, y)
 
-def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, logvv, gauss, x_cen, y_cen, threshold):
-    vmin, vmax = 1, 7 #logvv.min(), logvv.max()
-
-    im = ax.pcolormesh(pp_orig, 90 - tt_orig, logvv, cmap='plasma', rasterized=True, vmin=vmin, vmax=vmax)
-    # im = ax.pcolormesh(logvv, cmap='seismic', rasterized=True, vmin=vmin, vmax=vmax)
-
-    # plotting the 2D contours of the fitted Gaussian
-    levels = np.linspace(0, 8, 8)
-    ax.contour(pp_orig, 90 - tt_orig, gauss, colors='k', linestyles='dashed', linewidths=1, alpha=0.5, levels=levels)
-    # ax.contour(gauss, colors='k', linestyles='dashed', linewidths=1, alpha=0.5, levels=levels)
-    ax.text(0.99, 0.95, f'({x_cen:.2f}, {y_cen - 90:.2f})', transform=ax.transAxes,
-            va='top', ha='right', color='black')
+def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, logvv):
+    vmin, vmax = 1, 7
+    im = ax.pcolormesh(pp_orig, 90 - tt_orig, logvv, cmap='inferno', rasterized=True, vmin=vmin, vmax=vmax)
     ax.text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax.transAxes,
-            va='bottom', ha='left', color='red', fontweight='bold')
-    ax.plot(y_cen, x_cen - 90, 'xw')
-
-    plt.figure()
-    img = plt.contourf(gauss/gauss.max(), cmap='gnuplot2', levels=[0.1, 1])
-    plt.close()
-    p = img.collections[0].get_paths()[0]
-    v = p.vertices
-    x = v[:,0]
-    y = v[:,1]
-
-    TH = np.max(np.sqrt((x - x_cen)**2 + (y - y_cen)**2))
-
-    return TH
+            va='bottom', ha='left', color='white', fontweight='bold')

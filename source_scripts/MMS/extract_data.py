@@ -1,7 +1,7 @@
 import numpy as np
 
 class extract_VDF_data:
-    def __init__(self, data, time_idx, instrument):
+    def __init__(self, rec_dict, time_idx, instrument):
         self.data = data
         self.time_idx = time_idx
         self.instrument = instrument

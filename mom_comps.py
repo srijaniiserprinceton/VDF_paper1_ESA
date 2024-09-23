@@ -44,7 +44,7 @@ def generate_reconstructed_vdf():
 
 if __name__ == "__main__":
     # Load in the file that we are interested in looking at. 
-    file = "/home/michael/Research/VDF_paper1_ESA/input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf"
+    file = "./input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf"
 
     data_xr = cdflib.cdf_to_xarray(file, to_datetime=True)
 

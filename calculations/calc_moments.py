@@ -183,10 +183,7 @@ if __name__ == "__main__":
 
     tmerge, vdf_merge, energy_merged, vel_merged, theta_merged, phi_merged = merge_vdf_data(
         time, np.transpose(init_ds.vdf.data, [0, 1, 3, 2]), init_ds.energy.data[:, :, 0, 0], 
-        13.85*np.sqrt(init_ds.energy.data[:, :, 0, 0]), init_ds.theta.data[:, 0, 0, :], init_ds.phi.data[:, 0, :, 0]
-    )
-
-    
+        13.85*np.sqrt(init_ds.energy.data[:, :, 0, 0]), init_ds.theta.data[:, 0, 0, :], init_ds.phi.data[:, 0, :, 0])
 
     # Add the extra phi dimension
     new_phi = np.append(orig_phi, orig_phi[-1] + 11.25)     # This is in degrees.
