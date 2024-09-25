@@ -2,12 +2,6 @@ import numpy as np
 import spherepy as sp
 NAX = np.newaxis
 
-import matlab.engine as matlab
-# generating the low and high resolution Slepians-on-polar-cap
-eng = matlab.start_matlab()
-s = eng.genpath('/Users/srijanbharatidas/Documents/Research/Codes/Helioseismology/Slepians/Slepian_Git')
-eng.addpath(s, nargout=0)
-
 def grid_pol2cart(lnE, tt, pp, savegrids=False):
     # making the Cartesian grid
     Vmag = 13.8 * np.sqrt(np.power(10, lnE))
@@ -38,17 +32,22 @@ def gen_SH(L, NPHI, NTHETA):
     return sh_basis
 
 def gen_SLEP(rec_dict, L, N2D_restrict=False):
-        [G, V, lon, lat] = eng.glmalphapto('VDF_polarcap_MMS', L, 'HIGHRES', nargout=4)
-        rec_dict.G = np.asarray(G)
-        rec_dict.V = np.asarray(V).squeeze()
-        rec_dict.SLEP_PHI = np.asarray(lon)
-        rec_dict.SLEP_THETA = np.asarray(lat)
-        
-        # keeping only until the Shannon number
-        if(N2D_restrict):
-            N2D = np.argmin(np.abs(self.V - 0.5))
-            rec_dict.G = rec_dict.G[:N2D]
-            rec_dict.V = rec_dict.V[:N2D]
+    import matlab.engine as matlab
+    # generating the low and high resolution Slepians-on-polar-cap
+    eng = matlab.start_matlab()
+    s = eng.genpath('/Users/srijanbharatidas/Documents/Research/Codes/Helioseismology/Slepians/Slepian_Git')
+    eng.addpath(s, nargout=0)
+    [G, V, lon, lat] = eng.glmalphapto(f'VDF_polarcap_{rec_dict.instrument}', L, 'HIGHRES', nargout=4)
+    rec_dict.G = np.asarray(G)
+    rec_dict.V = np.asarray(V).squeeze()
+    rec_dict.SLEP_PHI = np.asarray(lon)
+    rec_dict.SLEP_THETA = np.asarray(lat)
+    
+    # keeping only until the Shannon number
+    if(N2D_restrict):
+        N2D = np.argmin(np.abs(rec_dict.V - 0.5))
+        rec_dict.G = rec_dict.G[:N2D]
+        rec_dict.V = rec_dict.V[:N2D]
 
-        eng.quit()
+    eng.quit()
         

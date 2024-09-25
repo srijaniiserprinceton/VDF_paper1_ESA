@@ -70,6 +70,20 @@ def reconstruct_from_MMS_Slepians(time_idx):
     VDF_rec_dict['theta0'] = VDF_2D_rec.theta0
     write_pickle(VDF_rec_dict, f'./output_data_files/VDF_rec_pklfiles/VDF_2D_rec_{time_idx}')
 
+def reconstruct_from_SolO_Slepians(time_idx):
+    #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
+    mu_phi, mu_theta = locate_axis.find_gyroaxis(rec_dict, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
+
+    #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
+    # StepI_bundle = sph2slep.get_StepI_Slepdict(rec_dict, TH)
+    # return None
+
+    #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
+    StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(mu_theta, mu_phi, rec_dict, time_idx, Lmax=Lmax, rcond=rcond_polcap,
+                                                                 makeplot=True)
+
+    return StepII_bundle
+
 def reconstruct_from_MMS_SphericalHarmonics():
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
@@ -96,15 +110,15 @@ def reconstruct_from_MMS_SphericalHarmonics():
     write_pickle(VDF_rec_dict, f'./output_data_files/VDF_rec_pklfiles/VDF_2D_rec_{time_idx}')
 
 
-def calc_moments_MMS(time_idx):
+def calc_moments_MMS(time_idx, mask_noisy=False):
     DATA_VDF = np.transpose(StepII_bundle.VDF[time_idx], [0, 2, 1]) * 1e12 * rec_dict.VDF_minval_true
-    DATA_VDF_ERR = np.transpose(StepII_bundle.VDF_ERR[time_idx], [0, 2, 1]) * 1e12
     REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * 1e12 * rec_dict.VDF_minval_true
 
     # removing the parts of the data and reconstructed VDF which have larger than NSR = 0.7
-    err_mask = DATA_VDF_ERR/DATA_VDF > 0.5
-    DATA_VDF[err_mask] = 0.0
-    # REC_VDF[err_mask] = 0.0
+    if(mask_noisy):
+        DATA_VDF_ERR = np.transpose(StepII_bundle.VDF_ERR[time_idx], [0, 2, 1]) * 1e12
+        err_mask = DATA_VDF_ERR/DATA_VDF > 0.5
+        DATA_VDF[err_mask] = 0.0
 
     velocity = 13.8 * np.sqrt(StepII_bundle.ENERGY[time_idx, :, 0, 0]) * 1000
 
@@ -125,22 +139,24 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'MMS'             # currently we have 'PSP-SPAN' and 'MMS' (under construction)
+    instrument = 'SolO'             # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'     # 'SphericalHarmonics'
     makeplot = True                # whether we want to save the diagnostic plots
-    TH = 85                        # the angular radius of the polar cap [in degrees]
+    TH = 25                        # the angular radius of the polar cap [in degrees]
     iterative_fit = False          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                       # minimum angular degree for polar Slepian generation
-    Lmax = 7                       # maximum angular degree for polar Slepian generation
+    Lmax = 29                       # maximum angular degree for polar Slepian generation
     Ncart = 50                     # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250               # Minimum reliable energy shell [in km/s]
     rcond_polcap = 0.0             # Condition number for the inversion in polar caps
     rcond_cart = 1e-4              # Condition number for the inversion on a 2D plane
     ignore_last_anode = False      # if we want to set the last anode counts to nan
+    N2D_restrict = True
 
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
-    filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
+    # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
+    filename='input_data_files/SO_Test.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
     # calculating time in units of milliseconds
@@ -151,6 +167,7 @@ if __name__=='__main__':
         reconstruct_func = reconstruct_from_PSP
     elif(instrument=='PSP-SPAN-MT'): 
         reconstruct_func = reconstruct_from_PSP
+
     # full FOV instrument
     elif(instrument=='MMS'): 
         rec_dict = setup_rec_grid.MMS(data, TH)
@@ -158,15 +175,23 @@ if __name__=='__main__':
             reconstruct_func = reconstruct_from_MMS_Slepians
         elif(angular_basis == 'SphericalHarmonics'):
             reconstruct_func = reconstruct_from_MMS_SphericalHarmonics
+    
+    # full FOV instrument
+    elif(instrument=='SolO'): 
+        rec_dict = setup_rec_grid.SolO(data, TH)
+        if(angular_basis == 'Slepians'):
+            reconstruct_func = reconstruct_from_SolO_Slepians
+        elif(angular_basis == 'SphericalHarmonics'):
+            reconstruct_func = reconstruct_from_SolO_SphericalHarmonics
 
     if(angular_basis == 'Slepians'):
         # saving these files as MATLAB readable arrays for generating Slepian functions
         mdict = {'phi0': 180, 'theta0': 90, 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
-                'theta_grid': rec_dict.SLEP_TT.flatten(), 'Nphi': rec_dict.NPHI, 'Ntheta': rec_dict.NTHETA}
+                'theta_grid': rec_dict.SLEP_TT.flatten(), 'Nphi': rec_dict.NPHI_SLEP, 'Ntheta': rec_dict.NTHETA_SLEP}
         savemat(f'./input_data_files/Slepian_functions/slepgen_grid_{instrument}_HIGHRES.mat', mdict)
 
         # generating the Slepian basis functions
-        misc_funcs.gen_SLEP(rec_dict, Lmax)
+        misc_funcs.gen_SLEP(rec_dict, Lmax, N2D_restrict=N2D_restrict)
 
     if(angular_basis == 'SphericalHarmonics'):
         SH_basis = misc_funcs.gen_SH(Lmax, NPHI, NTHETA)        
@@ -176,7 +201,8 @@ if __name__=='__main__':
     bvars = np.load('./input_data_files/vars.npy')
 
     # importing scripts based on which instrument we are using
-    sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_final = import_script.import_instrument_scripts(instrument)
+    sph2slep, extract_data, locate_axis, VDF_rec_polarcaps, VDF_rec_final, plot_VDF =\
+                                        import_script.import_instrument_scripts(instrument)
 
     data_moments = {}
     rec_moments = {}
@@ -195,13 +221,10 @@ if __name__=='__main__':
         # lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func()
         StepII_bundle = reconstruct_func(time_idx)
         data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS(time_idx)
+
+        # plotting the uninterpolated VDF
+        plot_VDF.plot_VDF(StepII_bundle, time_idx)
         continue
-        '''
-        np.save('output_data_files/lnE_mesh.npy', lnE_mesh)
-        np.save('output_data_files/theta_mesh.npy', theta_mesh)
-        np.save('output_data_files/phi_mesh.npy', phi_mesh)
-        np.save('output_data_files/VDF_3D_rec.npy', VDF_3D_rec)
-        '''
 
         # converting the grid to unstructured Cartesian
         VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh, savegrids=False)

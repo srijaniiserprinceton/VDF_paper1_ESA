@@ -38,12 +38,15 @@ class MMS:
         self.ESA_PHI = PHI * 1.0
 
         self.NENERGY = NENERGY
-        self.NPHI = NPHI + 1
-        self.NTHETA = NTHETA
+        self.NPHI_ESA = NPHI + 1
+        self.NTHETA_ESA = NTHETA
 
         # the grid to be used for Slepian reconstruction
-        self.SLEP_THETA = np.linspace(0, 180, self.NTHETA) - 90
-        self.SLEP_PHI = np.linspace(0, 360, self.NPHI)
+        self.SLEP_THETA = np.linspace(0, 180, self.NTHETA_ESA) - 90
+        self.SLEP_PHI = np.linspace(0, 360, self.NPHI_ESA)
+
+        self.NPHI_SLEP = NPHI + 1
+        self.NTHETA_SLEP = NTHETA
 
         self.SLEP_PP, self.SLEP_TT = np.meshgrid(self.SLEP_PHI, self.SLEP_THETA, indexing='ij')
 
@@ -55,3 +58,56 @@ class MMS:
         # the location of the phi and theta center
         self.PHI_CEN_IDX = PHI_CEN_IDX
         self.THETA_CEN_IDX = THETA_CEN_IDX
+
+class SolO:
+    def __init__(self, data_ESA, TH=45):
+        self.instrument = 'SolO'
+
+        NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
+        VDF = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
+        ENERGY = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
+        THETA = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
+        PHI = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
+
+        VDF[:,:,:NPHI,:] = data_ESA.vdf.data
+        # energy goes from high to low in ESA data
+        ENERGY[:,:,:NPHI,:] = data_ESA.energy.data[:,::-1,:,:]
+        THETA[:,:,:NPHI,:] = data_ESA.theta.data
+        PHI[:,:,:NPHI,:] = data_ESA.phi.data
+
+        # we want to scale VDF such that the lowest non-zero entry is 1.0
+        VDF[VDF == 0] = np.nan
+        self.VDF_minval_true = np.nanmin(VDF)
+        VDF = VDF / self.VDF_minval_true
+
+        # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
+        self.nanval = 1e0
+        VDF[np.isnan(VDF)] = self.nanval
+
+        self.VDF = VDF * 1.0
+        self.ENERGY = ENERGY * 1.0
+
+        # since phi in the original grid goes from (-180 to 180) and we want it to be from (0 to 360)
+        # phi = 0 in SolO grid corresponds to phi = 180 in PSP grid.
+        self.ESA_THETA = THETA * 1.0 + 90
+        self.ESA_PHI = PHI * 1.0 + 180
+
+        self.NENERGY = NENERGY
+        self.NPHI_ESA = NPHI
+        self.NTHETA_ESA = NTHETA
+
+        # estimating number of gridpoints for Slepians to maintain a similar resolution of SolO grid
+        self.NPHI_SLEP = int(360 // np.mean(np.diff(self.ESA_PHI[0,0,:,0])))
+        self.NTHETA_SLEP = int(180 // np.mean(np.diff(self.ESA_THETA[0,0,0,:])))
+
+        # the grid to be used for Slepian reconstruction
+        self.SLEP_PHI = np.linspace(0, 360, self.NPHI_SLEP)
+        self.SLEP_THETA = np.linspace(0, 180, self.NTHETA_SLEP) - 90
+
+        self.SLEP_PP, self.SLEP_TT = np.meshgrid(self.SLEP_PHI, self.SLEP_THETA, indexing='ij')
+
+        # to be initialized later in the workflow
+        self.G = None
+        self.V = None
+        self.TH = TH
+
