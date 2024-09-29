@@ -53,7 +53,6 @@ G_sym = []
 for slep_idx in range(100):
     # print(slep_idx, np.sum(np.abs(StepII_bundle.G[::-1,:,slep_idx] + StepII_bundle.G[:,:,slep_idx])) / np.sum(np.abs(StepII_bundle.G[::-1,:,slep_idx]))/2)
     asym_frac = np.sum(np.abs(G[::-1,:,slep_idx] + G[:,:,slep_idx])) / np.sum(np.abs(G[::-1,:,slep_idx]))/2
-    print(slep_idx, asym_frac)
     if(asym_frac > 0.5): G_sym.append(G[:,:,slep_idx])
 
 G = np.asarray(G_sym)
@@ -156,7 +155,7 @@ plt.plot(XX[0], SPC_f(XX[0], ycen_spc))
 
 #----------------- interactive plotting --------------------#
 fill_color = 'black'
-fig = plt.figure(figsize=(16,8))
+fig = plt.figure(figsize=(8,10))
 ax1 = fig.add_subplot(221)
 fig.subplots_adjust(bottom=0.25)
 
@@ -174,6 +173,9 @@ spanfill2 = ax1.fill_between(XX[0], yvertmin, ymax_span, color=fill_color)
 ax1.set_xlim([0,1000])
 ax1.set_ylim([-600,600])
 ax1.set_aspect('equal')
+ax1.set_title('DATA', color='orange', fontweight='bold')
+ax1.text(0.76, 0.9, f'SPAN', transform=ax1.transAxes,
+         va='bottom', ha='left', color='white', fontweight='bold')
 
 ax2 = fig.add_subplot(222)
 span_data = make_SPAN_data(0)
@@ -181,17 +183,25 @@ im2 = ax2.pcolormesh(XX, YY, gyrotropic_recon_2D_VDF(span_data), cmap='inferno',
 ax2.set_aspect('equal')
 ax2.set_xlim([0,1000])
 ax2.set_ylim([-600,600])
+ax2.set_title('RECONSTRUCTION', color='orange', fontweight='bold')
+ax2.text(0.76, 0.9, f'SPAN', transform=ax2.transAxes,
+         va='bottom', ha='left', color='white', fontweight='bold')
 
-ax3 = fig.add_subplot(223)
+ax3 = fig.add_subplot(223, aspect=200)
 spc_data = SPC_f(XX[0], ycen_spc)
 [spcdata] = ax3.plot(XX[0], spc_data, color='yellow')
 ax3.set_xlim([0,1000])
+ax3.set_ylim([1,7])
+ax3.text(0.8, 0.9, f'SPC', transform=ax3.transAxes,
+         va='bottom', ha='left', color='white', fontweight='bold')
 
 ax4 = fig.add_subplot(224)
 im4 = ax4.pcolormesh(XX, YY, gyrotropic_joint_recon_2D_VDF(span_data), cmap='inferno', vmin=1, vmax=7)
 ax4.set_aspect('equal')
 ax4.set_xlim([0,1000])
 ax4.set_ylim([-600,600])
+ax4.text(0.55, 0.9, f'SPAN + SPC', transform=ax4.transAxes,
+         va='bottom', ha='left', color='white', fontweight='bold')
 
 # Define an axes area and draw a slider in it
 axis_color = 'white'
@@ -239,4 +249,6 @@ reset_button_ax = fig.add_axes([0.8, 0.025, 0.1, 0.04])
 reset_button = Button(reset_button_ax, 'Reset', color='black', hovercolor='0.1')
 def reset_button_on_clicked(mouse_event):
     angle_slider.reset()
+    NSR_slider.reset()
+    rcond_slider.reset()
 reset_button.on_clicked(reset_button_on_clicked)
