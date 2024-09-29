@@ -14,8 +14,8 @@ eng.addpath(s, nargout=0)
 import generate_2D_contour as gen_contour
 
 class VDF_rec_polarcaps:
-    def __init__(self, DATA, StepI_bundle, time_idx, instrument='PSP-SPAN', Lmin=8, Lmax=12, rcond=0.0, iterative_fit=True, makeplot=True):
-        self.DATA = DATA
+    def __init__(self, rec_dict, StepI_bundle, time_idx, instrument='PSP-SPAN', Lmin=8, Lmax=12, rcond=0.0, iterative_fit=True, makeplot=True):
+        self.rec_dict = rec_dict
         self.time_idx = time_idx
         self.__dict__.update(StepI_bundle.__dict__)
         self.Lmin, self.Lmax = Lmin, Lmax
@@ -26,6 +26,9 @@ class VDF_rec_polarcaps:
         self.G_hr, self.V_hr = None, None
         self.S_hr = None
 
+        # making a dictionary of all Slepians used
+        self.G_all = {}
+
         # these get flipped somehow when the Slepians are generated in Matlab
         self.N_lat_lr, self.N_lon_lr = StepI_bundle.lon_lr.T.shape
         self.N_lat_hr, self.N_lon_hr = StepI_bundle.lon_hr.T.shape
@@ -34,8 +37,8 @@ class VDF_rec_polarcaps:
         self.tt_hr_idx, self.pp_hr_idx = np.meshgrid(np.linspace(0, 180, self.N_lat_hr), np.linspace(0, 360, self.N_lon_hr), indexing='ij')
 
         # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
-        self.DATA.VDF[np.isnan(self.DATA.VDF)] = 1e0
-        self.N_Eshells = self.DATA.VDF.shape[0]
+        self.rec_dict.VDF[time_idx, np.isnan(self.rec_dict.VDF[time_idx])] = 1e0
+        self.N_Eshells = self.rec_dict.VDF[time_idx].shape[0]
 
         # gyrotropized 2D VDF on a plane
         self.VDF_2D = np.zeros((self.N_Eshells, self.N_lat_hr))
@@ -49,6 +52,10 @@ class VDF_rec_polarcaps:
                     self.G_hr = np.reshape(self.G_hr[0,:,:], (1, self.N_lat_hr, self.N_lon_hr))
                 else:
                     self.G_hr = self.G_hr[1:,:,:]
+
+                # storing the Slepians used for SPC joint inversion
+                self.G_all[f'{L}'] = self.G_hr * 1.0 
+
                 # performing the iterative fitting with the chosen eigenfunctions
                 self.gyrotropic_recon_3D_VDF()
 
@@ -78,11 +85,11 @@ class VDF_rec_polarcaps:
         # saving the 2D VDF by taking a slice along the nearest phi grid to phi0
         self.VDF_2D = self.fine_from_fine[:, :, phi0_idx]
 
-        '''
+        
         # rolling the VDF in theta to adjust the theta center for gyrotropy in Cartesian
         roll_theta_idx = int(self.theta0 - 90)
         self.VDF_2D = np.roll(self.VDF_2D, roll_theta_idx, axis=1)
-        '''
+        
 
         # generating the 2D velocity grid 
         self.V1, self.V2 = None, None
@@ -118,8 +125,8 @@ class VDF_rec_polarcaps:
     def gyrotropic_recon_3D_VDF(self):
         # looping over energy shells -> fitting polar Slepians
         for E_idx in range(self.N_Eshells):
-            E = self.DATA.ENERGY[E_idx, 0, 0]
-            vv = self.DATA.VDF[E_idx, :, :] 
+            E = self.rec_dict.ENERGY[self.time_idx, E_idx, 0, 0]
+            vv = self.rec_dict.VDF[self.time_idx, E_idx, :, :] 
             data_vv = np.log10(vv)
             data = np.zeros((self.N_lat_lr, self.N_lon_lr)) + np.nan
             # tiling the SPAN-Ai data in the correct location
@@ -149,7 +156,7 @@ class VDF_rec_polarcaps:
         # converting grids to velocity space
         m_p = 0.010438870      #eV/c^2 where c = 299792 km/s
         q_p = 1 
-        vmag = np.sqrt(2 * q_p * self.DATA.ENERGY[:, 0, 0] / m_p)   # in km/s
+        vmag = np.sqrt(2 * q_p * self.rec_dict.ENERGY[self.time_idx, :, 0, 0] / m_p)   # in km/s
 
         theta_hr = self.lat_hr[:,0]
         self.V1 = vmag[:, np.newaxis] * np.cos(theta_hr[np.newaxis,:] * np.pi/180)
@@ -184,8 +191,27 @@ class VDF_rec_polarcaps:
         x = v[:,0]
         y = v[:,1]
 
+        # because we symmetrize in theta, we make a mandatorily symmetric domain
+        Xsym, Ysym = x[y>0] * 1.0, y[y>0] * 1.0
+
+        roll_idx = np.argmax(np.diff(Xsym)) + 1
+        Xsym = np.roll(Xsym, -roll_idx)
+        Ysym = np.roll(Ysym, -roll_idx)
+
+        # adding the symmetric counterpart
+        Xsym = np.append(Xsym, Xsym[::-1])
+        Ysym = np.append(Ysym, -1. * Ysym[::-1])
+
+        # to complete the curve
+        Xsym = np.append(Xsym, Xsym[0])
+        Ysym = np.append(Ysym, Ysym[0])
+
+        plt.figure(); plt.plot(Xsym, Ysym, 'k')
+        plt.plot(Xsym, Ysym, '--r')
+
         # storing the contour
-        curve2storeXY = {'X': v.T[0], 'Y': v.T[1]}
+        # curve2storeXY = {'X': v.T[0], 'Y': v.T[1]}
+        curve2storeXY = {'X': Xsym, 'Y': Ysym}
         savemat('XY_pts.mat', curve2storeXY)
 
         '''
@@ -205,7 +231,7 @@ class VDF_rec_polarcaps:
 
     def plot_polar_rec_VDF(self, E_idx, ax, fine_from_finecoefs):
         vmin, vmax = 0, 6
-        E = self.DATA.ENERGY[E_idx, 0, 0]
+        E = self.rec_dict.ENERGY[self.time_idx, E_idx, 0, 0]
         ax.pcolormesh(self.lon_hr, self.lat_hr, fine_from_finecoefs,
                       cmap='BuPu', vmin=vmin, vmax=vmax, rasterized=True)
         ax.scatter(self.phi0, self.theta0-90, marker='o', color='orange', s=2)

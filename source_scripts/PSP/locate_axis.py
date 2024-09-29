@@ -5,24 +5,25 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 plt.ion()    
 
-font = {'size'   : 22}
+font = {'size'   : 12}
 
 rc('font', **font)
 
 # imports from our custom package
 from . import fit_2D_gaussian as fit_gauss
 
-def find_gyroaxis(DATA, time_idx, bslope, var, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
-    if(makeplot): phi_theta_cen, fig, ax = with_plot(DATA, time_idx, Nrows, Ncols)
-    else: phi_theta_cen = without_plot(DATA, Nrows, Ncols)
+def find_gyroaxis(rec_dict, time_idx, bslope, var, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
+    if(makeplot): phi_theta_cen, fig, ax = with_plot(rec_dict, time_idx, Nrows, Ncols)
+    else: phi_theta_cen = without_plot(rec_dict, time_idx, Nrows, Ncols)
     phi_theta_cen = np.asarray(phi_theta_cen)
 
+    print(phi_theta_cen.shape)
     # removing the shells with less than 0.5 counts of the max
     weight_mask = phi_theta_cen[:,1] / np.max(phi_theta_cen[:,1]) >= 0.1
     # weight_mask = (phi_theta_cen[:,2] >= 95.625) * (phi_theta_cen[:,2] <= 174.375)
 
 
-    fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask, DATA)
+    fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask, rec_dict)
 
     phi_theta_cen_purged = []
     for i in range(len(phi_theta_cen)):
@@ -43,8 +44,8 @@ def find_gyroaxis(DATA, time_idx, bslope, var, TH=45, Nrows=4, Ncols=8, makeplot
         for axs in ax.flatten():
             axs.scatter(mu_phi, mu_theta, marker='o', color='white')
             axs.plot(x_cap, y_cap, '--r')
-            axs.set_xlim([DATA.PHI.min(),DATA.PHI.max()])
-            axs.set_ylim([DATA.THETA.min(),DATA.THETA.max()])
+            axs.set_xlim([rec_dict.ESA_PHI[time_idx].min(),rec_dict.ESA_PHI[time_idx].max()])
+            axs.set_ylim([rec_dict.ESA_THETA[time_idx].min(),rec_dict.ESA_THETA[time_idx].max()])
             axs.set_aspect('equal')
 
         plt.subplots_adjust(top=0.96, bottom=0.05, left=0.03, right=0.99, wspace=0.05, hspace=0.05)
@@ -54,7 +55,7 @@ def find_gyroaxis(DATA, time_idx, bslope, var, TH=45, Nrows=4, Ncols=8, makeplot
         plt.xlabel(r'$v_{\phi} [{}^{\circ}]$', labelpad=0.01, fontsize=16)
         plt.ylabel(r'$v_{\theta} [{}^{\circ}]$', fontsize=16)
         plt.suptitle(f'{time_idx}')
-        plt.savefig(f'VDF_paper1_plots/VDF_{DATA.instrument}_polar_plot/{time_idx}.png')
+        plt.savefig(f'VDF_paper1_plots/VDF_{rec_dict.instrument}_polar_plot/{time_idx}.png')
         plt.close()
 
         # making the gyroaxis diagnostic plot
@@ -88,7 +89,7 @@ def find_gyroaxis(DATA, time_idx, bslope, var, TH=45, Nrows=4, Ncols=8, makeplot
         return mu_phi, mu_theta, phi_theta_cen
     else: mu_phi, mu_theta
 
-def with_plot(DATA, time_idx, Nrows, Ncols):
+def with_plot(rec_dict, time_idx, Nrows, Ncols):
     fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
 
     # levels chosen just to plot the 2D Gaussian over the VDF
@@ -102,8 +103,9 @@ def with_plot(DATA, time_idx, Nrows, Ncols):
         row, col = i//Ncols, i%Ncols
         # using try/except so that we can loop over the bad data shells with low counts
         try:
-            E = DATA.ENERGY[E_idx, :, :][0, 0]
-            tt_orig, pp_orig, vv = DATA.THETA[E_idx, :, :], DATA.PHI[E_idx, :, :], DATA.VDF[E_idx, :, :] 
+            E = rec_dict.ENERGY[time_idx, E_idx, 0, 0]
+            tt_orig, pp_orig, vv = rec_dict.ESA_THETA[time_idx, E_idx, :, :], rec_dict.ESA_PHI[time_idx, E_idx, :, :],\
+                                   rec_dict.VDF[time_idx, E_idx, :, :] 
 
             # get log of vv in the theta-phi grid after interpolating
             pp, tt, logvv = interpolate_vdf(pp_orig, tt_orig, vv)
@@ -129,15 +131,16 @@ def with_plot(DATA, time_idx, Nrows, Ncols):
 
     return phi_theta_cen, fig, ax
     
-def without_plot(DATA, Nrows, Ncols):
+def without_plot(rec_dict, Nrows, Ncols):
     # making list to store the gyroaxis locations for each shell
     phi_theta_cen = []
 
     for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
         # using try/except so that we can loop over the bad data shells with low counts
         try:
-            E = DATA.ENERGY[E_idx, :, :][0, 0]
-            tt_orig, pp_orig, vv = DATA.THETA[E_idx, :, :], DATA.PHI[E_idx, :, :], DATA.VDF[E_idx, :, :] 
+            E = rec_dict.ENERGY[time_idx, E_idx, :, :][0, 0]
+            tt_orig, pp_orig, vv = rec_dict.THETA[time_idx, E_idx, :, :], rec_dict.PHI[time_idx, E_idx, :, :],\
+                                   rec_dict.VDF[time_idx, E_idx, :, :] 
 
             # the number of bins which are non-zero in an energy shell
             Ncount = np.sum(~np.isnan(vv)) / len(vv.flatten())
@@ -236,7 +239,7 @@ def plot_gyroframe_diag(mu_phi, phi_theta_cen, time_idx):
     plt.savefig(f'./VDF_paper1_plots/plot_gyroframe_diag/check_center_{time_idx}.png')
     plt.close()
 
-def fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask, DATA=None):
+def fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask, rec_dict=None):
     # making the vx and vy from Energy and phi
     v = 13.8 * np.sqrt(phi_theta_cen[:,0])
     vx = v * np.cos(np.radians(phi_theta_cen[:,2]))
@@ -312,13 +315,15 @@ def fit_gyroaxis_dir(phi_theta_cen, time_idx, bslope, var, weight_mask, DATA=Non
     # plt.legend()
     plt.tight_layout()
 
-    if DATA:
+    if rec_dict:
         # convert to Cartesian coordinates
-        vx_grid = 13.8 * np.sqrt(DATA.ENERGY) * np.cos(np.radians(DATA.PHI)) * np.cos(np.radians(DATA.THETA - 90))
-        vy_grid = 13.8 * np.sqrt(DATA.ENERGY) * np.sin(np.radians(DATA.PHI)) * np.cos(np.radians(DATA.THETA - 90))
-        vz_grid = 13.8 * np.sqrt(DATA.ENERGY) * np.sin(np.radians(DATA.THETA - 90))
+        vx_grid = 13.8 * np.sqrt(rec_dict.ENERGY[time_idx]) * np.cos(np.radians(rec_dict.ESA_PHI[time_idx])) *\
+                         np.cos(np.radians(rec_dict.ESA_THETA[time_idx] - 90))
+        vy_grid = 13.8 * np.sqrt(rec_dict.ENERGY[time_idx]) * np.sin(np.radians(rec_dict.ESA_PHI[time_idx])) *\
+                         np.cos(np.radians(rec_dict.ESA_THETA[time_idx] - 90))
+        vz_grid = 13.8 * np.sqrt(rec_dict.ENERGY[time_idx]) * np.sin(np.radians(rec_dict.ESA_THETA[time_idx] - 90))
 
-        vdf = DATA.VDF
+        vdf = rec_dict.VDF[time_idx]
         phi_plane = 0
         theta_plane = 4
         plt.contourf(vx_grid[:, :, theta_plane], vy_grid[:, :, theta_plane], np.log10(np.nansum(vdf[:, :, :], axis=2)), cmap='plasma', zorder=0)

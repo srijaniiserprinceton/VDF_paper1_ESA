@@ -1,5 +1,47 @@
 import numpy as np
 
+class PSP:
+    def __init__(self, data_ESA, TH):
+        self.instrument = 'PSP'
+
+        NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
+
+        VDF = data_ESA.vdf.data[:,:,::-1,:]
+        ENERGY = data_ESA.energy.data[:,:,::-1,:]
+        THETA = data_ESA.theta.data[:,:,::-1,:] + 90
+        PHI = data_ESA.phi.data[:,:,::-1,:]
+
+        # we want to scale VDF such that the lowest non-zero entry is 1.0
+        VDF[VDF == 0] = np.nan
+        self.VDF_minval_true = np.nanmin(VDF)
+        VDF = VDF / self.VDF_minval_true
+
+        self.VDF = VDF * 1.0
+        self.ENERGY = ENERGY * 1.0
+
+        # the true PSP-SPAN grid
+        self.ESA_THETA = THETA * 1.0
+        self.ESA_PHI = PHI * 1.0
+
+        self.NENERGY = NENERGY
+        self.NPHI_ESA = NPHI + 1
+        self.NTHETA_ESA = NTHETA
+
+        # the grid to be used for Slepian reconstruction
+        self.SLEP_THETA = np.linspace(0, 180, self.NTHETA_ESA) - 90
+        self.SLEP_PHI = np.linspace(0, 360, self.NPHI_ESA)
+
+        self.NPHI_SLEP = NPHI + 1
+        self.NTHETA_SLEP = NTHETA
+
+        self.SLEP_PP, self.SLEP_TT = np.meshgrid(self.SLEP_PHI, self.SLEP_THETA, indexing='ij')
+
+        # to be initialized later in the workflow
+        self.G = None
+        self.V = None
+        self.TH = TH
+
+
 class MMS:
     def __init__(self, data_ESA, TH, PHI_CEN_IDX=16, THETA_CEN_IDX=0):
         self.instrument = 'MMS'
