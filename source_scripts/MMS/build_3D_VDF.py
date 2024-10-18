@@ -24,7 +24,6 @@ def get_3D_VDF(vdf_rec_dict, NEmesh=100, spline_order=3):
     G_interp = np.zeros((NSlepians, 101, 201))
 
     for Slep_idx in range(NSlepians):
-        print(lnE.shape, vdf_rec_dict.SLEP_coeffs[:, Slep_idx].shape)
         t, c, k = interpolate.splrep(lnE, vdf_rec_dict.SLEP_coeffs[:, Slep_idx], s=0, k=spline_order)
         spline = interpolate.BSpline(t, c, k, extrapolate=False)
 

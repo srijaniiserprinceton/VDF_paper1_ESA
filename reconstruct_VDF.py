@@ -61,7 +61,7 @@ def reconstruct_from_MMS_Slepians(time_idx):
     # return StepII_bundle
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
     lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle, NEmesh=100, spline_order=3)
-    sys.exit()
+    # sys.exit()
     return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
 
     # saving the final reconstructed VDF for post-processing calculations
@@ -146,15 +146,15 @@ if __name__=='__main__':
     angular_basis = 'Slepians'     # 'SphericalHarmonics'
     makeplot = True                # whether we want to save the diagnostic plots
     TH = 85                        # the angular radius of the polar cap [in degrees]
-    iterative_fit = True          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
+    iterative_fit = False          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                       # minimum angular degree for polar Slepian generation
-    Lmax = 12                       # maximum angular degree for polar Slepian generation
+    Lmax = 8                       # maximum angular degree for polar Slepian generation
     Ncart = 50                     # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250               # Minimum reliable energy shell [in km/s]
     rcond_polcap = 0.0             # Condition number for the inversion in polar caps
     rcond_cart = 1e-4              # Condition number for the inversion on a 2D plane
     ignore_last_anode = False      # if we want to set the last anode counts to nan
-    N2D_restrict = True
+    N2D_restrict = False
 
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
@@ -213,28 +213,29 @@ if __name__=='__main__':
     data_moments = {}
     rec_moments = {}
 
-    for time_idx in tqdm(range(len(times))):
+    # for time_idx in tqdm(range(len(times))):
+    for time_idx in tqdm(range(533, 534)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
         # time_idx = 0         # time index of VDF to be reconstructed
         time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
 
-        # lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func()
-        StepII_bundle = reconstruct_func(time_idx)
+        lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
+        # StepII_bundle = reconstruct_func(time_idx)
 
-        sys.exit()
-        data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS(time_idx)
+        # # calculating the moments for comparison
+        # data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS(time_idx)
 
-        # plotting the uninterpolated VDF
-        plot_VDF.plot_VDF(StepII_bundle, time_idx)
-        continue
+        # # plotting the uninterpolated VDF
+        # plot_VDF.plot_VDF(StepII_bundle, time_idx)
+        # continue
 
         # converting the grid to unstructured Cartesian
         VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh, savegrids=False)
 
         # plotting the 2D slice
-        # plt.style.use('dark_background')
+        plt.style.use('dark_background')
         plt.figure()
-        plt.pcolormesh(VX[:,50], VY[:,50], VDF_3D_rec[:,50], vmin=0, vmax=7, cmap='inferno', rasterized=True)
+        plt.pcolormesh(-1*VX[:,50], -1*VY[:,50], VDF_3D_rec[:,50], vmin=0, vmax=7, cmap='inferno', rasterized=True)
         plt.gca().set_aspect('equal')
         plt.title(f'Time = {time_HMS}')
         plt.colorbar()
@@ -242,4 +243,4 @@ if __name__=='__main__':
         plt.close()
 
         plot_3D_VDF.plot_VDF(VX, VY, VZ, VDF_3D_rec, time_idx, time_HMS)
-        # sys.exit()
+        sys.exit()
