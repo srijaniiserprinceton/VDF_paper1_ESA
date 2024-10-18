@@ -235,7 +235,7 @@ if __name__=='__main__':
         # plotting the 2D slice
         plt.style.use('dark_background')
         plt.figure()
-        plt.pcolormesh(-1*VX[:,50], -1*VY[:,50], VDF_3D_rec[:,50], vmin=0, vmax=7, cmap='inferno', rasterized=True)
+        plt.pcolormesh(VX[:,50], VY[:,50], VDF_3D_rec[:,50], vmin=0, vmax=7, cmap='inferno', rasterized=True)
         plt.gca().set_aspect('equal')
         plt.title(f'Time = {time_HMS}')
         plt.colorbar()
