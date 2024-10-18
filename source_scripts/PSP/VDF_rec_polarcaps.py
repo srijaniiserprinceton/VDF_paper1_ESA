@@ -230,9 +230,9 @@ class VDF_rec_polarcaps:
         savemat('XYP.mat', evalpts2storeXY)
 
     def plot_polar_rec_VDF(self, E_idx, ax, fine_from_finecoefs):
-        vmin, vmax = 0, 6
+        vmin, vmax = 0, 7
         E = self.rec_dict.ENERGY[self.time_idx, E_idx, 0, 0]
-        ax.pcolormesh(self.lon_hr, self.lat_hr, fine_from_finecoefs,
+        ax.pcolormesh(self.lon_hr, self.lat_hr + 90, fine_from_finecoefs,
                       cmap='BuPu', vmin=vmin, vmax=vmax, rasterized=True)
         ax.scatter(self.phi0, self.theta0-90, marker='o', color='orange', s=2)
         ax.set_aspect('equal')

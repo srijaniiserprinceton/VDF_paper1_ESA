@@ -11,7 +11,7 @@ plt.ion()
 # s = eng.genpath('/Users/srijanbharatidas/Documents/Research/Codes/Helioseismology/Slepians/Slepian_Git')
 # eng.addpath(s, nargout=0)
 
-import generate_2D_contour as gen_contour
+# import generate_2D_contour as gen_contour
 
 class VDF_rec_polarcaps_Slepians:
     def __init__(self, rec_dict, time_idx, Lmax=12, rcond=0.0, makeplot=True):
@@ -26,7 +26,7 @@ class VDF_rec_polarcaps_Slepians:
         self.VDF[np.isnan(self.VDF)] = 1e0
 
         # gyrotropized 2D VDF on a plane
-        self.fine_from_fine = np.zeros((self.NENERGY, self.NTHETA, self.NPHI))
+        self.fine_from_fine = np.zeros((self.NENERGY, self.NTHETA_SLEP, self.NPHI_SLEP))
 
         # self.gen_Slepians_on_polarcap(self.Lmax)
         self.SLEP_coeffs = np.zeros((self.NENERGY, len(self.G)))

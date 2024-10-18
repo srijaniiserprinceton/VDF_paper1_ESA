@@ -19,7 +19,7 @@ from source_scripts import misc_functions as misc_funcs
 import plot_3D_VDF
 from calculations.calc_moments import calc_moments, spher_moments
 
-def reconstruct_from_PSP():
+def reconstruct_from_PSP(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(rec_dict, time_idx, bslopes[time_idx], bvars[time_idx],
                                                                 TH=TH, Nrows=4, Ncols=8, makeplot=True)
@@ -58,9 +58,10 @@ def reconstruct_from_MMS_Slepians(time_idx):
     StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, Lmax=Lmax, rcond=rcond_polcap,
                                                                  makeplot=True)
 
-    return StepII_bundle
+    # return StepII_bundle
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
     lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle, NEmesh=100, spline_order=3)
+    sys.exit()
     return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
 
     # saving the final reconstructed VDF for post-processing calculations
@@ -72,7 +73,7 @@ def reconstruct_from_MMS_Slepians(time_idx):
     VDF_rec_dict['theta0'] = VDF_2D_rec.theta0
     write_pickle(VDF_rec_dict, f'./output_data_files/VDF_rec_pklfiles/VDF_2D_rec_{time_idx}')
 
-def reconstruct_from_SolO_Slepians():
+def reconstruct_from_SolO_Slepians(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta = locate_axis.find_gyroaxis(rec_dict, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
 
@@ -86,7 +87,7 @@ def reconstruct_from_SolO_Slepians():
 
     return StepII_bundle
 
-def reconstruct_from_MMS_SphericalHarmonics():
+def reconstruct_from_MMS_SphericalHarmonics(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
 
@@ -141,10 +142,10 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'PSP-SPAN'             # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
+    instrument = 'MMS'             # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'     # 'SphericalHarmonics'
     makeplot = True                # whether we want to save the diagnostic plots
-    TH = 45                        # the angular radius of the polar cap [in degrees]
+    TH = 85                        # the angular radius of the polar cap [in degrees]
     iterative_fit = True          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                       # minimum angular degree for polar Slepian generation
     Lmax = 12                       # maximum angular degree for polar Slepian generation
@@ -156,8 +157,8 @@ if __name__=='__main__':
     N2D_restrict = True
 
     #----------------------READING THE SOURCE FILE----------------------------------#
-    filename = './input_data_files/2020-01-26_VDFs.cdf'
-    # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
+    # filename = './input_data_files/2020-01-26_VDFs.cdf'
+    filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
     # filename='input_data_files/SO_Test.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
@@ -187,7 +188,7 @@ if __name__=='__main__':
         elif(angular_basis == 'SphericalHarmonics'):
             reconstruct_func = reconstruct_from_SolO_SphericalHarmonics
 
-    '''
+    
     if(angular_basis == 'Slepians'):
         # saving these files as MATLAB readable arrays for generating Slepian functions
         mdict = {'phi0': 180, 'theta0': 90, 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
@@ -196,7 +197,7 @@ if __name__=='__main__':
 
         # generating the Slepian basis functions
         misc_funcs.gen_SLEP(rec_dict, Lmax, N2D_restrict=N2D_restrict)
-    '''
+    
 
     if(angular_basis == 'SphericalHarmonics'):
         SH_basis = misc_funcs.gen_SH(Lmax, NPHI, NTHETA)        
@@ -218,7 +219,7 @@ if __name__=='__main__':
         time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
 
         # lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func()
-        StepII_bundle = reconstruct_func()
+        StepII_bundle = reconstruct_func(time_idx)
 
         sys.exit()
         data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS(time_idx)
@@ -231,7 +232,7 @@ if __name__=='__main__':
         VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh, savegrids=False)
 
         # plotting the 2D slice
-        plt.style.use('dark_background')
+        # plt.style.use('dark_background')
         plt.figure()
         plt.pcolormesh(VX[:,50], VY[:,50], VDF_3D_rec[:,50], vmin=0, vmax=7, cmap='inferno', rasterized=True)
         plt.gca().set_aspect('equal')

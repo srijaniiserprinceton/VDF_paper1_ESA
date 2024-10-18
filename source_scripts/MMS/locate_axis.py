@@ -3,7 +3,7 @@ import numpy as np
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.modeling.models import Const2D, Gaussian2D
 from astropy.utils.exceptions import AstropyUserWarning
-from photutils.centroids import centroid_2dg
+# from photutils.centroids import centroid_2dg
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 plt.ion()    

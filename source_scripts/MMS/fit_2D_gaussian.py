@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import optimize
 np.set_printoptions(precision=4)
-from sklearn import mixture
+# from sklearn import mixture
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 plt.ion()
@@ -116,34 +116,35 @@ def plot_gmm(gmm, X, label=True, ax=None):
     for pos, covar, w in zip(gmm.means_, gmm.covariances_, gmm.weights_):
         draw_ellipse(pos, covar, alpha=w * w_factor)
 
-def GMM_on_VDF(VDF_2D, n_populations=2, Nsamples=int(1e4), plot_GMM=True):
-    '''
-    Function to draw random sample of points with VDF as the distribution.
-    This is done to facilitate performing a GMM on the VDF to obtain the contours for Slepians.
-    '''
-    # removing the negative entries and setting them to zero (probability cannot be negative)
-    VDF_2D[VDF_2D < 0.0] = 0.0
 
-    # normalizing the VDF to emulate properties of a probability distribution function
-    VDF_2D = VDF_2D / np.nansum(VDF_2D)
-    # Create a flat copy of the distribution function
-    flat = VDF_2D.flatten()
+# def GMM_on_VDF(VDF_2D, n_populations=2, Nsamples=int(1e4), plot_GMM=True):
+#     '''
+#     Function to draw random sample of points with VDF as the distribution.
+#     This is done to facilitate performing a GMM on the VDF to obtain the contours for Slepians.
+#     '''
+#     # removing the negative entries and setting them to zero (probability cannot be negative)
+#     VDF_2D[VDF_2D < 0.0] = 0.0
 
-    # sampling a set of 2D points of length Nsamples from the distribution function
-    sample_index = np.random.choice(a=flat.size, p=flat, size=Nsamples)
+#     # normalizing the VDF to emulate properties of a probability distribution function
+#     VDF_2D = VDF_2D / np.nansum(VDF_2D)
+#     # Create a flat copy of the distribution function
+#     flat = VDF_2D.flatten()
 
-    # Take this index and adjust it so it matches the original array
-    adjusted_index = np.unravel_index(sample_index, VDF_2D.shape)
-    adjusted_index = np.array(list(zip(*adjusted_index)))
+#     # sampling a set of 2D points of length Nsamples from the distribution function
+#     sample_index = np.random.choice(a=flat.size, p=flat, size=Nsamples)
 
-    # performing Gaussian Mixture Modeling
-    gmm = mixture.GaussianMixture(n_components=n_populations, covariance_type='full', random_state=42)
+#     # Take this index and adjust it so it matches the original array
+#     adjusted_index = np.unravel_index(sample_index, VDF_2D.shape)
+#     adjusted_index = np.array(list(zip(*adjusted_index)))
 
-    if(plot_GMM):
-        fig, ax = plt.subplots(1,1)
-        plot_gmm(gmm, adjusted_index, ax=ax)
-        ax.set_xlim([0,32])
+#     # performing Gaussian Mixture Modeling
+#     gmm = mixture.GaussianMixture(n_components=n_populations, covariance_type='full', random_state=42)
 
-    return gmm
+#     if(plot_GMM):
+#         fig, ax = plt.subplots(1,1)
+#         plot_gmm(gmm, adjusted_index, ax=ax)
+#         ax.set_xlim([0,32])
+
+#     return gmm
 
 
