@@ -105,12 +105,13 @@ class VDF_rec_polarcaps_Slepians:
 
             # fitting the polar Slepians
             nan_mask_hr = np.isnan(img_hr)
+            # img_hr[nan_mask_hr] = 0
+            # nan_mask_hr = np.isnan(img_hr)
             G_nonan_hr = self.G[:,~nan_mask_hr]
-            M_hr = G_nonan_hr @ G_nonan_hr.T 
-            __, self.S, __ = np.linalg.svd(M_hr)
-            I_hr = np.identity(M_hr.shape[0])
-            self.SLEP_coeffs[E_idx] = np.linalg.inv(G_nonan_hr @ G_nonan_hr.T +  self.S.max() * self.rcond * I_hr) @\
-                                    G_nonan_hr @ img_hr[~nan_mask_hr]
+            M = G_nonan_hr @ G_nonan_hr.T 
+            __, self.S, __ = np.linalg.svd(M)
+            I = np.identity(M.shape[0])
+            self.SLEP_coeffs[E_idx] = np.linalg.inv(M +  self.S.max() * self.rcond * I) @ G_nonan_hr @ img_hr[~nan_mask_hr]
 
             # reconstructing from the polar Slepians and plotting
             fine_from_finecoefs = np.dot(np.moveaxis(self.G, 0, -1), self.SLEP_coeffs[E_idx])
@@ -202,8 +203,8 @@ class VDF_rec_polarcaps_SphericalHarmonics:
             SH_nonan_hr = self.SH_hr[:,~nan_mask_hr]
             M_hr = SH_nonan_hr @ SH_nonan_hr.T 
             __, self.S_hr, __ = np.linalg.svd(M_hr)
-            I_hr = np.identity(M_hr.shape[0])
-            self.coeffs_hr[E_idx] = np.linalg.inv(SH_nonan_hr @ SH_nonan_hr.T +  self.S_hr.max() * self.rcond * I_hr) @ SH_nonan_hr @ img_hr[~nan_mask_hr]
+            I = np.identity(M_hr.shape[0])
+            self.coeffs_hr[E_idx] = np.linalg.inv(SH_nonan_hr @ SH_nonan_hr.T +  self.S_hr.max() * self.rcond * I) @ SH_nonan_hr @ img_hr[~nan_mask_hr]
 
             # reconstructing from the polar Slepians and plotting
             fine_from_finecoefs = np.dot(np.moveaxis(self.SH_hr, 0, -1), self.coeffs_hr[E_idx])

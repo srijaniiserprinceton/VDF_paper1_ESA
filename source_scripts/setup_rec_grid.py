@@ -45,7 +45,7 @@ class PSP:
 
 
 class MMS:
-    def __init__(self, data_ESA, TH, Lmax=None, PHI_CEN_IDX=16, THETA_CEN_IDX=0, makeplot=True):
+    def __init__(self, data_ESA, TH, Lmax=None, Nmesh=(100, 201, 101), Espline_order=3, PHI_CEN_IDX=16, THETA_CEN_IDX=0, makeplot=True):
         self.instrument = 'MMS'
 
         NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
@@ -114,10 +114,15 @@ class MMS:
         self.PHI_CEN_IDX = PHI_CEN_IDX
         self.THETA_CEN_IDX = THETA_CEN_IDX
 
+        # Init parameters for Energy Shell interpolation. 
+        self.NEmesh, self.NPmesh, self.NTmesh = Nmesh
+        self.Espline_order = Espline_order
+
+
         self.makeplot = makeplot
 
 class SolO:
-    def __init__(self, data_ESA, TH=45, makeplot = True):
+    def __init__(self, data_ESA, TH=45, Lmax=None, Nmesh=(100, 201, 101), Espline_order=3, makeplot = True):
         self.instrument = 'SolO'
 
         NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
@@ -162,11 +167,27 @@ class SolO:
         self.SLEP_THETA = np.linspace(0, 180, self.NTHETA_SLEP) - 90
 
         self.SLEP_PP, self.SLEP_TT = np.meshgrid(self.SLEP_PHI, self.SLEP_THETA, indexing='ij')
+        
+        # Setup slepian directory
+        self.slep_dir = misc_functions.read_config()[0]
 
+        # Check Lmax
+        self.Lmax_Nyq = int(self.NTHETA_ESA / 2)
+        if Lmax is None: 
+            self.Lmax = self.Lmax_Nyq
+        else:
+            if Lmax > self.Lmax_Nyq: print("Lmax exceeds Nyquist. Resetting to Nyquist.")
+            self.Lmax = min(Lmax, self.Lmax_Nyq)
+        
         # to be initialized later in the workflow
         self.G = None
         self.V = None
         self.TH = TH
+
+        # Init parameters for Energy Shell interpolation. 
+        self.NEmesh, self.NTmesh, self.NPmesh = Nmesh
+        self.Espline_order = Espline_order
+
 
         self.makeplot = makeplot
 

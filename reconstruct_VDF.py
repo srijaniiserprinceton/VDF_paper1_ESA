@@ -55,23 +55,15 @@ def reconstruct_from_MMS_Slepians(time_idx):
     # return None
 
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
-    StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, Lmax=Lmax, rcond=rcond_polcap,
+    StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, rcond=rcond_polcap,
                                                                  makeplot=True)
 
     # return StepII_bundle
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
-    lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle, NEmesh=100, spline_order=3)
+    lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle)
     # sys.exit()
     return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
 
-    # saving the final reconstructed VDF for post-processing calculations
-    VDF_rec_dict = {}
-    VDF_rec_dict['VDF_2D_rec'] = VDF_2D_rec.VDF_Sleprec
-    VDF_rec_dict['X'] = VDF_2D_rec.XX[0,:]
-    VDF_rec_dict['Y'] = VDF_2D_rec.YY[:,0]
-    VDF_rec_dict['phi0'] = VDF_2D_rec.phi0
-    VDF_rec_dict['theta0'] = VDF_2D_rec.theta0
-    write_pickle(VDF_rec_dict, f'./output_data_files/VDF_rec_pklfiles/VDF_2D_rec_{time_idx}')
 
 def reconstruct_from_SolO_Slepians(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
@@ -156,6 +148,9 @@ if __name__=='__main__':
     ignore_last_anode = False      # if we want to set the last anode counts to nan
     N2D_restrict = False
 
+    NEmesh, NPmesh, NTmesh = 100, 201, 101    # High resolution grid for final interpolation.
+    Espline_order = 3                         # Spline order for final interpolation in energy.
+
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
     filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
@@ -174,7 +169,7 @@ if __name__=='__main__':
 
     # full FOV instrument
     elif(instrument=='MMS'): 
-        rec_dict = setup_rec_grid.MMS(data, TH, makeplot=makeplot)
+        rec_dict = setup_rec_grid.MMS(data, TH, Lmax=Lmax, Nmesh=(NEmesh, NPmesh, NTmesh), Espline_order=Espline_order, makeplot=makeplot)
         if(angular_basis == 'Slepians'):
             reconstruct_func = reconstruct_from_MMS_Slepians
         elif(angular_basis == 'SphericalHarmonics'):
@@ -182,7 +177,7 @@ if __name__=='__main__':
     
     # full FOV instrument
     elif(instrument=='SolO'): 
-        rec_dict = setup_rec_grid.SolO(data, TH)
+        rec_dict = setup_rec_grid.SolO(data, TH, Lmax=Lmax, Nmesh=(NEmesh, NPmesh, NTmesh), Espline_order=Espline_order, makeplot=makeplot)
         if(angular_basis == 'Slepians'):
             reconstruct_func = reconstruct_from_SolO_Slepians
         elif(angular_basis == 'SphericalHarmonics'):
@@ -235,7 +230,7 @@ if __name__=='__main__':
         # plotting the 2D slice
         plt.style.use('dark_background')
         plt.figure()
-        plt.pcolormesh(VX[:,50], VY[:,50], VDF_3D_rec[:,50], vmin=0, vmax=7, cmap='inferno', rasterized=True)
+        plt.pcolormesh(VX[:,NTmesh//2], VY[:,NTmesh//2], VDF_3D_rec[:,NTmesh//2], vmin=0, vmax=7, cmap='inferno', rasterized=True)
         plt.gca().set_aspect('equal')
         plt.title(f'Time = {time_HMS}')
         plt.colorbar()
