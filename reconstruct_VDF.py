@@ -47,7 +47,7 @@ def reconstruct_from_PSP(time_idx):
     write_pickle(VDF_rec_dict, f'./output_data_files/VDF_rec_pklfiles/VDF_2D_rec_{time_idx}')
 
 def reconstruct_from_MMS_Slepians(time_idx):
-    #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
+    #=============STEP I: Plots the VDF on each Energy Shell (Does not really find gyrocenter)=======================#
     locate_axis.find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8)
 
     #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
