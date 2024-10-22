@@ -32,13 +32,13 @@ def gen_SH(L, NPHI, NTHETA):
 
     return sh_basis
 
-def gen_SLEP(rec_dict, L, N2D_restrict=False):
+def gen_SLEP(rec_dict, N2D_restrict=False):
     import matlab.engine as matlab
     # generating the low and high resolution Slepians-on-polar-cap
     eng = matlab.start_matlab()
     s = eng.genpath(rec_dict.slep_dir)
     eng.addpath(s, nargout=0)
-    [G, V, lon, lat] = eng.glmalphapto(f'VDF_polarcap_{rec_dict.instrument}', L, 'HIGHRES', nargout=4)
+    [G, V, lon, lat] = eng.glmalphapto(f'VDF_polarcap_{rec_dict.instrument}', rec_dict.Lmax, 'HIGHRES', nargout=4)
     rec_dict.G = np.asarray(G)
     rec_dict.V = np.asarray(V).squeeze()
     rec_dict.SLEP_PHI = np.asarray(lon)

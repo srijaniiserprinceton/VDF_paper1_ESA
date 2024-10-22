@@ -196,7 +196,7 @@ if __name__=='__main__':
         savemat(f'./input_data_files/Slepian_functions/slepgen_grid_{instrument}_HIGHRES.mat', mdict)
 
         # generating the Slepian basis functions
-        misc_funcs.gen_SLEP(rec_dict, Lmax, N2D_restrict=N2D_restrict)
+        misc_funcs.gen_SLEP(rec_dict, N2D_restrict=N2D_restrict)
     
 
     if(angular_basis == 'SphericalHarmonics'):

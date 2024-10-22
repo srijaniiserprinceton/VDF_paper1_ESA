@@ -45,7 +45,7 @@ class PSP:
 
 
 class MMS:
-    def __init__(self, data_ESA, TH, PHI_CEN_IDX=16, THETA_CEN_IDX=0, makeplot=True):
+    def __init__(self, data_ESA, TH, Lmax=None, PHI_CEN_IDX=16, THETA_CEN_IDX=0, makeplot=True):
         self.instrument = 'MMS'
 
         NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
@@ -97,6 +97,14 @@ class MMS:
         # Setup slepian directory
         self.slep_dir = misc_functions.read_config()[0]
 
+        # Check Lmax
+        self.Lmax_Nyq = int(self.NTHETA_ESA / 2)
+        if Lmax is None: 
+            self.Lmax = self.Lmax_Nyq
+        else:
+            if Lmax > self.Lmax_Nyq: print("Lmax exceeds Nyquist. Resetting to Nyquist.")
+            self.Lmax = min(Lmax, self.Lmax_Nyq)
+        
         # to be initialized later in the workflow
         self.G = None
         self.V = None
