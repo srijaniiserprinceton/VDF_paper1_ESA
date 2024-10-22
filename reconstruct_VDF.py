@@ -48,7 +48,7 @@ def reconstruct_from_PSP(time_idx):
 
 def reconstruct_from_MMS_Slepians(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
-    locate_axis.find_gyroaxis(rec_dict, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
+    locate_axis.find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8)
 
     #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
     # StepI_bundle = sph2slep.get_StepI_Slepdict(rec_dict, TH)
@@ -174,7 +174,7 @@ if __name__=='__main__':
 
     # full FOV instrument
     elif(instrument=='MMS'): 
-        rec_dict = setup_rec_grid.MMS(data, TH)
+        rec_dict = setup_rec_grid.MMS(data, TH, makeplot=makeplot)
         if(angular_basis == 'Slepians'):
             reconstruct_func = reconstruct_from_MMS_Slepians
         elif(angular_basis == 'SphericalHarmonics'):

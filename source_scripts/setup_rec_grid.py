@@ -1,5 +1,7 @@
 import numpy as np
 
+from source_scripts import misc_functions
+
 class PSP:
     def __init__(self, data_ESA, TH):
         self.instrument = 'PSP'
@@ -43,7 +45,7 @@ class PSP:
 
 
 class MMS:
-    def __init__(self, data_ESA, TH, PHI_CEN_IDX=16, THETA_CEN_IDX=0):
+    def __init__(self, data_ESA, TH, PHI_CEN_IDX=16, THETA_CEN_IDX=0, makeplot=True):
         self.instrument = 'MMS'
 
         NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
@@ -92,6 +94,9 @@ class MMS:
 
         self.SLEP_PP, self.SLEP_TT = np.meshgrid(self.SLEP_PHI, self.SLEP_THETA, indexing='ij')
 
+        # Setup slepian directory
+        self.slep_dir = misc_functions.read_config()[0]
+
         # to be initialized later in the workflow
         self.G = None
         self.V = None
@@ -101,8 +106,10 @@ class MMS:
         self.PHI_CEN_IDX = PHI_CEN_IDX
         self.THETA_CEN_IDX = THETA_CEN_IDX
 
+        self.makeplot = makeplot
+
 class SolO:
-    def __init__(self, data_ESA, TH=45):
+    def __init__(self, data_ESA, TH=45, makeplot = True):
         self.instrument = 'SolO'
 
         NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
@@ -152,4 +159,6 @@ class SolO:
         self.G = None
         self.V = None
         self.TH = TH
+
+        self.makeplot = makeplot
 

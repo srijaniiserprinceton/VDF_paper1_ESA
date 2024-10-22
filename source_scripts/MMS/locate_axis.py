@@ -3,7 +3,6 @@ import numpy as np
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.modeling.models import Const2D, Gaussian2D
 from astropy.utils.exceptions import AstropyUserWarning
-# from photutils.centroids import centroid_2dg
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 plt.ion()    
@@ -11,36 +10,19 @@ plt.ion()
 # imports from our custom package
 from . import fit_2D_gaussian as fit_gauss
 
-def find_gyroaxis(rec_dict, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
-    if(makeplot): Eshell_info, fig, ax = with_plot(rec_dict, time_idx, Nrows, Ncols)
+def find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8, all_shell_info=True):
+    if(rec_dict.makeplot): Eshell_info, fig, ax = with_plot(rec_dict, time_idx, Nrows, Ncols)
     else: Eshell_info = without_plot(rec_dict, Nrows, Ncols)
 
     Eshell_info = np.asarray(Eshell_info)
 
-    '''
-    # removing the shells with less than 0.5 counts of the max
-    weight_mask = phi_theta_cen[:,1] / np.max(phi_theta_cen[:,1]) >= 0.7
-
-    phi_theta_cen_purged = []
-    for i in range(len(phi_theta_cen)):
-        if(weight_mask[i] == False): continue
-        phi_theta_cen_purged.append(phi_theta_cen[i])
-    phi_theta_cen_purged = np.asarray(phi_theta_cen_purged)
-
-    # finding the effective centroid across shells
-    (mu_phi, sig_phi) = norm.fit(phi_theta_cen_purged[:,3])
-    (mu_theta, sig_theta) = norm.fit(phi_theta_cen_purged[:,2])
-
-    # finding the largest TH
-    TH = np.max(phi_theta_cen_purged[:,-1])
-    '''
     mu_phi, mu_theta = rec_dict.ESA_PHI[time_idx,0,rec_dict.PHI_CEN_IDX,0],\
                        rec_dict.ESA_THETA[time_idx,0,0,rec_dict.THETA_CEN_IDX]
 
-    if(makeplot):
+    if(rec_dict.makeplot):
         # making the polar cap extent in degrees
         clock_angle = np.linspace(0, 2 * np.pi, 100)
-        x_cap, y_cap = mu_phi + TH * np.cos(clock_angle), mu_theta + TH * np.sin(clock_angle)
+        x_cap, y_cap = mu_phi + rec_dict.TH * np.cos(clock_angle), mu_theta + rec_dict.TH * np.sin(clock_angle)
 
         # plotting the effective centroid in all shells
         for axs in ax.flatten():
@@ -128,7 +110,7 @@ def with_plot(rec_dict, time_idx, Nrows, Ncols):
         Intensity = np.sum(vv[~np.isnan(vv)])
 
         #------------------MAKING DIAGNOSTIC PLOTS IF REQUIRED-----------------------#
-        TH = plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, logvv)
+        plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, logvv)
 
         # appending the located centers
         Eshell_info.append([E, Intensity])
