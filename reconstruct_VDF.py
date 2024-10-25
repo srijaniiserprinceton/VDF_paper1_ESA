@@ -55,8 +55,7 @@ def reconstruct_from_MMS_Slepians(time_idx):
     # return None
 
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
-    StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, rcond=rcond_polcap,
-                                                                 makeplot=True)
+    StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, rcond=rcond_polcap)
 
     # return StepII_bundle
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
@@ -67,17 +66,16 @@ def reconstruct_from_MMS_Slepians(time_idx):
 
 def reconstruct_from_SolO_Slepians(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
-    mu_phi, mu_theta = locate_axis.find_gyroaxis(rec_dict, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
-
-    #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
-    # StepI_bundle = sph2slep.get_StepI_Slepdict(rec_dict, TH)
-    # return None
-
+    mu_phi, mu_theta = locate_axis.find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8)
+    
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
-    StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(mu_theta, mu_phi, rec_dict, time_idx, Lmax=Lmax, rcond=rcond_polcap,
-                                                                 makeplot=True)
+    StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(mu_theta, mu_phi, rec_dict, time_idx, rcond=rcond_polcap,
+                                                                 Nrows=4, Ncols=8)
 
-    return StepII_bundle
+    #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
+    lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle)
+
+    return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
 
 def reconstruct_from_MMS_SphericalHarmonics(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
@@ -134,16 +132,16 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'MMS'             # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
+    instrument = 'SolO'            # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'     # 'SphericalHarmonics'
     makeplot = True                # whether we want to save the diagnostic plots
-    TH = 85                        # the angular radius of the polar cap [in degrees]
+    TH = 45                       # the angular radius of the polar cap [in degrees]
     iterative_fit = False          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                       # minimum angular degree for polar Slepian generation
-    Lmax = 8                       # maximum angular degree for polar Slepian generation
+    Lmax = 15                      # maximum angular degree for polar Slepian generation
     Ncart = 50                     # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250               # Minimum reliable energy shell [in km/s]
-    rcond_polcap = 0.0             # Condition number for the inversion in polar caps
+    rcond_polcap = 1e-6          # Condition number for the inversion in polar caps
     rcond_cart = 1e-4              # Condition number for the inversion on a 2D plane
     ignore_last_anode = False      # if we want to set the last anode counts to nan
     N2D_restrict = False
@@ -153,8 +151,8 @@ if __name__=='__main__':
 
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
-    filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
-    # filename='input_data_files/SO_Test.cdf'
+    # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
+    filename='input_data_files/SO_2020-08-02_VDF.cdf'       # Change the naming convention so that is it SolO...
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
     # calculating time in units of milliseconds

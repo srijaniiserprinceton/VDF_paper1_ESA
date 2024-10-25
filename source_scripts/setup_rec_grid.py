@@ -143,7 +143,7 @@ class SolO:
         VDF = VDF / self.VDF_minval_true
 
         # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
-        self.nanval = 1e0
+        self.nanval = np.nan #1e-5
         VDF[np.isnan(VDF)] = self.nanval
 
         self.VDF = VDF * 1.0
@@ -172,7 +172,9 @@ class SolO:
         self.slep_dir = misc_functions.read_config()[0]
 
         # Check Lmax
-        self.Lmax_Nyq = int(self.NTHETA_ESA / 2)
+        dtheta_Nyq = np.max(np.diff(self.ESA_THETA[:,0,0,:]))
+        dphi_Nyq = np.max(np.diff(self.ESA_PHI[:,0,:,0]))
+        self.Lmax_Nyq = int(np.min((90/dtheta_Nyq, 180/dphi_Nyq)))
         if Lmax is None: 
             self.Lmax = self.Lmax_Nyq
         else:
@@ -185,7 +187,7 @@ class SolO:
         self.TH = TH
 
         # Init parameters for Energy Shell interpolation. 
-        self.NEmesh, self.NTmesh, self.NPmesh = Nmesh
+        self.NEmesh, self.NPmesh, self.NTmesh = Nmesh
         self.Espline_order = Espline_order
 
 

@@ -14,11 +14,10 @@ plt.ion()
 # import generate_2D_contour as gen_contour
 
 class VDF_rec_polarcaps_Slepians:
-    def __init__(self, rec_dict, time_idx, rcond=0.0, makeplot=True):
+    def __init__(self, rec_dict, time_idx, rcond=0.0):
         self.time_idx = time_idx
         self.__dict__.update(rec_dict.__dict__)
         self.rcond = rcond
-        self.makeplot = makeplot
         self.S = None
 
         # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)

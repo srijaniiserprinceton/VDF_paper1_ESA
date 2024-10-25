@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt; plt.ion(); plt.style.use('dark_background')
 # imports from our custom package
 from . import fit_2D_gaussian as fit_gauss
 
-def find_gyroaxis(rec_dict, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True, all_shell_info=True):
-    if(makeplot): Eshell_info, fig, ax = with_plot(rec_dict, time_idx, Nrows, Ncols)
-    else: Eshell_info = without_plot(rec_dict, Nrows, Ncols)
+def find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8):
+    if(rec_dict.makeplot): Eshell_info, fig, ax = with_plot(rec_dict, time_idx, Nrows, Ncols)
+    else: Eshell_info = without_plot(rec_dict, time_idx, Nrows, Ncols)
 
     Eshell_info = np.asarray(Eshell_info)
 
@@ -16,10 +16,10 @@ def find_gyroaxis(rec_dict, time_idx, TH=45, Nrows=4, Ncols=8, makeplot=True, al
     (mu_phi, sig_phi) = norm.fit(Eshell_info[:,2])
     (mu_theta, sig_theta) = norm.fit(Eshell_info[:,3])
 
-    if(makeplot):
+    if(rec_dict.makeplot):
         # making the polar cap extent in degrees
         clock_angle = np.linspace(0, 2 * np.pi, 100)
-        x_cap, y_cap = mu_phi + TH * np.cos(clock_angle), mu_theta + TH * np.sin(clock_angle)
+        x_cap, y_cap = mu_phi + rec_dict.TH * np.cos(clock_angle), mu_theta + rec_dict.TH * np.sin(clock_angle)
 
         # plotting the effective centroid in all shells
         for axs in ax.flatten():
@@ -49,7 +49,7 @@ def with_plot(rec_dict, time_idx, Nrows, Ncols):
     Eshell_info = []
 
     # for i, E_idx in enumerate(np.arange(2, rec_dict.NENERGY, rec_dict.NENERGY // (Nrows * Ncols))):
-    for i, E_idx in enumerate(np.arange(28, 28 + (Nrows * Ncols))):
+    for i, E_idx in enumerate(np.arange(40, 40 + (Nrows * Ncols))):
         # finding the row and the column of the subplots
         row, col = i//Ncols, i%Ncols
 
@@ -80,7 +80,7 @@ def with_plot(rec_dict, time_idx, Nrows, Ncols):
 
     return Eshell_info, fig, ax
     
-def without_plot(rec_dict, Nrows, Ncols):
+def without_plot(rec_dict, time_idx, Nrows, Ncols):
     # making list to store the gyroaxis locations for each shell
     Eshell_info = []
 

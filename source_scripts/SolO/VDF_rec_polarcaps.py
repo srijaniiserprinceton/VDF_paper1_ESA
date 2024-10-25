@@ -4,7 +4,7 @@ from scipy.interpolate import griddata
 from scipy.io import savemat
 import matplotlib.pyplot as plt
 plt.ion()
-
+import sys
 # import matlab.engine as matlab
 # # generating the low and high resolution Slepians-on-polar-cap
 # eng = matlab.start_matlab()
@@ -14,14 +14,12 @@ plt.ion()
 import generate_2D_contour as gen_contour
 
 class VDF_rec_polarcaps_Slepians:
-    def __init__(self, mu_phi, mu_theta, rec_dict, time_idx, Lmax=12, rcond=0.0, makeplot=True):
+    def __init__(self, mu_phi, mu_theta, rec_dict, time_idx, rcond=0.0, Nrows=4, Ncols=8):
         self.time_idx = time_idx
         self.__dict__.update(rec_dict.__dict__)
         self.mu_phi = self.ESA_PHI[0,0,int(np.round(mu_phi)),0]
         self.mu_theta = self.ESA_THETA[0,0,0,int(np.round(mu_theta))] - 90
-        self.Lmax = Lmax
         self.rcond = rcond
-        self.makeplot = makeplot
         self.S = None
 
         # gyrotropized 2D VDF on a plane
@@ -39,7 +37,7 @@ class VDF_rec_polarcaps_Slepians:
             xcirc, ycirc = self.TH * np.cos(theta_circ) + self.mu_phi, self.TH * np.sin(theta_circ) + self.mu_theta
 
             fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)
-            for i, E_idx in enumerate(range(28, 28 + 32)):
+            for i, E_idx in enumerate(range(40, 40 + (Nrows * Ncols))):
                 self.plot_polar_rec_VDF(E_idx, ax[i//8, i%8], self.fine_from_fine[E_idx], xcirc, ycirc)
 
             plt.subplots_adjust(top=0.96, bottom=0.05, left=0.03, right=0.99, wspace=0.05, hspace=0.05)
@@ -66,24 +64,32 @@ class VDF_rec_polarcaps_Slepians:
             E = self.ENERGY[self.time_idx, E_idx, 0, 0]
             vv = self.VDF[self.time_idx, E_idx, :, :] 
             logvv = np.log10(vv)
-            
-            # # rolling the VDF to bring it to the center of the grid where the Slepians are calculated
-            # logvv = np.roll(logvv, 11//2 - int(self.mu_phi), axis=0)
-
+            logvv = np.nan_to_num(logvv, posinf=np.nan, neginf=np.nan)
             # interpolating the data to Slepian grid before fitting polar Slepians (minor adjustments)
             orig_phi_grid = self.ESA_PHI[self.time_idx, E_idx]
             orig_theta_grid = self.ESA_THETA[self.time_idx, E_idx]
-            img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),
-                              (self.SLEP_PHI, self.SLEP_THETA+90), method='linear')
+
+            img_hr = np.zeros_like(self.SLEP_PHI)
+            img_hr[15:24,26:37] = logvv.T
+
+            # img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),
+            #                   (self.SLEP_PHI, self.SLEP_THETA+90), method='nearest')
+            
+            # plt.figure()
+            # plt.pcolormesh(self.SLEP_PHI, -self.SLEP_THETA, img_hr, vmin=1, vmax=7, cmap='inferno')
+            # plt.title(f'E = {E}eV')
+            # sys.exit()
 
             # fitting the polar Slepians
             nan_mask_hr = np.isnan(img_hr)
+            img_hr[nan_mask_hr] = 0
+            nan_mask_hr = np.isnan(img_hr)
             G_nonan_hr = self.G[:,~nan_mask_hr]
-            M_hr = G_nonan_hr @ G_nonan_hr.T 
-            __, self.S, __ = np.linalg.svd(M_hr)
-            I_hr = np.identity(M_hr.shape[0])
-            self.SLEP_coeffs[E_idx] = np.linalg.inv(G_nonan_hr @ G_nonan_hr.T +  self.S.max() * self.rcond * I_hr) @\
-                                    G_nonan_hr @ img_hr[~nan_mask_hr]
+            M = G_nonan_hr @ G_nonan_hr.T 
+            __, self.S, __ = np.linalg.svd(M)
+
+            I = np.identity(M.shape[0])
+            self.SLEP_coeffs[E_idx] = np.linalg.inv(M + self.S.max() * self.rcond * I) @ G_nonan_hr @ img_hr[~nan_mask_hr]
 
             # reconstructing from the polar Slepians and plotting
             fine_from_finecoefs = np.dot(np.moveaxis(self.G, 0, -1), self.SLEP_coeffs[E_idx])
@@ -172,8 +178,8 @@ class VDF_rec_polarcaps_SphericalHarmonics:
             SH_nonan_hr = self.SH_hr[:,~nan_mask_hr]
             M_hr = SH_nonan_hr @ SH_nonan_hr.T 
             __, self.S_hr, __ = np.linalg.svd(M_hr)
-            I_hr = np.identity(M_hr.shape[0])
-            self.coeffs_hr[E_idx] = np.linalg.inv(SH_nonan_hr @ SH_nonan_hr.T +  self.S_hr.max() * self.rcond * I_hr) @ SH_nonan_hr @ img_hr[~nan_mask_hr]
+            I = np.identity(M_hr.shape[0])
+            self.coeffs_hr[E_idx] = np.linalg.inv(SH_nonan_hr @ SH_nonan_hr.T +  self.S_hr.max() * self.rcond * I) @ SH_nonan_hr @ img_hr[~nan_mask_hr]
 
             # reconstructing from the polar Slepians and plotting
             fine_from_finecoefs = np.dot(np.moveaxis(self.SH_hr, 0, -1), self.coeffs_hr[E_idx])
