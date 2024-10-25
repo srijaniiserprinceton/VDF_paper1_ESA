@@ -23,7 +23,7 @@ class VDF_rec_polarcaps_Slepians:
         self.S = None
 
         # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
-        self.VDF[np.isnan(self.VDF)] = 1e0
+        # self.VDF[np.isnan(self.VDF)] = 1e0
 
         # gyrotropized 2D VDF on a plane
         self.fine_from_fine = np.zeros((self.NENERGY, self.NTHETA_SLEP, self.NPHI_SLEP))

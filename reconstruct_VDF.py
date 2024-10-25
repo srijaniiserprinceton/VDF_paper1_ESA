@@ -232,6 +232,26 @@ if __name__=='__main__':
         # converting the grid to unstructured Cartesian
         VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh, savegrids=False)
 
+        VDF_3D_bundle = {}
+        VDF_3D_bundle['VDF_3D_rec'] = VDF_3D_rec
+        VDF_3D_bundle['VX'] = VX
+        VDF_3D_bundle['VY'] = VY
+        VDF_3D_bundle['VZ'] = VZ
+
+        StepII_bundle_plotdict = {}
+        StepII_bundle_plotdict['ENERGY'] = StepII_bundle.ENERGY
+        StepII_bundle_plotdict['ESA_THETA'] = StepII_bundle.ESA_THETA
+        StepII_bundle_plotdict['ESA_PHI'] = StepII_bundle.ESA_PHI
+        StepII_bundle_plotdict['VDF'] = StepII_bundle.VDF
+        StepII_bundle_plotdict['SLEP_THETA'] = StepII_bundle.SLEP_THETA
+        StepII_bundle_plotdict['SLEP_PHI'] = StepII_bundle.SLEP_PHI
+        StepII_bundle_plotdict['fine_from_fine'] = StepII_bundle.fine_from_fine
+        StepII_bundle_plotdict['G'] = StepII_bundle.G
+        StepII_bundle_plotdict['V'] = StepII_bundle.V
+        StepII_bundle_plotdict['Slep_coeffs'] = StepII_bundle.SLEP_coeffs
+        write_pickle(VDF_3D_bundle, 'VDF3Dbundle_533_MMSplot')
+        write_pickle(StepII_bundle_plotdict, 'StepIIbundle_533_MMSplot')
+
         # plotting the 2D slice
         plt.style.use('dark_background')
         plt.figure()
@@ -244,3 +264,14 @@ if __name__=='__main__':
 
         plot_3D_VDF.plot_VDF(VX, VY, VZ, VDF_3D_rec, time_idx, time_HMS)
         sys.exit()
+
+
+# cmaps = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Grays', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_grey', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gist_yerg', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'grey', 'hot', 'hot_r', 'hsv', 'hsv_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'viridis', 'viridis_r', 'winter', 'winter_r']
+
+# for cmap in cmaps:
+#     plt.figure()
+#     plt.pcolormesh(VX[:,50], VY[:,50], VDF_3D_rec[:,50], vmin=0, vmax=7, cmap=cmap, rasterized=True)
+#     plt.gca().set_aspect('equal')
+#     plt.colorbar()
+#     plt.savefig(f'test_cmaps/{cmap}.png')
+#     plt.close()
