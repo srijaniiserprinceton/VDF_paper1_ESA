@@ -10,7 +10,7 @@ from matplotlib import rc
 font = {'size'   : 12}
 rc('font', **font)
 
-def plot_slices(dist_xr, ts=0, PINDX=None, TINDX=None, CONTOUR=True, SUMMATION=True):
+def plot_slices(dist_xr, ts=0, PINDX=None, TINDX=None, CONTOUR=True, LEVELS=None, SUMMATION=True, cmap='viridis'):
     # Plot on the Peak theta and phi slice
     max_vdf = np.nanargmax(dist_xr.vdf[ts].data)
     eind, pind, tind = np.unravel_index(max_vdf, dist_xr.vdf[ts].data.shape)
@@ -55,13 +55,20 @@ def plot_slices(dist_xr, ts=0, PINDX=None, TINDX=None, CONTOUR=True, SUMMATION=T
         vy_theta_plane = dist_xr.vy[ts, :, :, TINDX]
 
     if CONTOUR:
-        im1 = ax1.contourf(vx_phi_plane, vz_phi_plane, vdf_phi_plane, norm=LogNorm())
-        im2 = ax2.contourf(vx_theta_plane, vy_theta_plane, vdf_theta_plane, norm=LogNorm())
+        if LEVELS:
+            min_lvl, max_lvl, N = LEVELS
+            contour_levels = np.logspace(np.log10(min_lvl), np.log10(max_lvl), num=N)
+            im1 = ax1.contourf(vx_phi_plane, vz_phi_plane, vdf_phi_plane, levels=contour_levels, norm=LogNorm(min_lvl, max_lvl), extend='max', cmap=cmap)
+            im2 = ax2.contourf(vx_theta_plane, vy_theta_plane, vdf_theta_plane, levels=contour_levels, norm=LogNorm(min_lvl, max_lvl), extend='max', cmap=cmap)
+
+        else:
+            im1 = ax1.contourf(vx_phi_plane, vz_phi_plane, vdf_phi_plane, norm=LogNorm(), cmap=cmap)
+            im2 = ax2.contourf(vx_theta_plane, vy_theta_plane, vdf_theta_plane, norm=LogNorm(), cmap=cmap)
 
         cbar = fig.colorbar(im1, cax=cbar_ax, orientation='horizontal')
     else:
-        im1 = ax1.pcolormesh(vx_phi_plane, vz_phi_plane, vdf_phi_plane, norm=LogNorm())
-        im2 = ax2.pcolormesh(vx_theta_plane, vy_theta_plane, vdf_theta_plane, norm=LogNorm())
+        im1 = ax1.pcolormesh(vx_phi_plane, vz_phi_plane, vdf_phi_plane, norm=LogNorm(), cmap=cmap)
+        im2 = ax2.pcolormesh(vx_theta_plane, vy_theta_plane, vdf_theta_plane, norm=LogNorm(), cmap=cmap)
 
         cbar = fig.colorbar(im1, cax=cbar_ax, orientation='horizontal')
 

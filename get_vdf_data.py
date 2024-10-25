@@ -348,7 +348,7 @@ def init_psp_vdf(trange, CREDENTIALS=None, CLIP=False):
     
     return(xr_ds)
 
-def save_vdf_data(trange, spacecraft, PROBE='1', SUPPORT=None, CREDENTIALS=None):
+def save_vdf_data(trange, spacecraft, PROBE='1', SUPPORT=None, CREDENTIALS=None, CLIP=False):
     '''
     Saving VDF data in streamlined format to be used in the rest of the workflow.
 
@@ -376,19 +376,23 @@ def save_vdf_data(trange, spacecraft, PROBE='1', SUPPORT=None, CREDENTIALS=None)
         
 
     if spacecraft == 'SO':
-        dataset = init_solo_vdf(trange, CLIP=False)
+        dataset = init_solo_vdf(trange, CLIP=CLIP)
 
         # Since Solar Orbiter data sets are large we need to save them in chunks
-        chunks = []
-        for i in range(12):
-            # Break into 12 chunks
-            t1 = dataset.time[0] + i * np.timedelta64(2, 'h')
-            t2 = t1 + np.timedelta64(2, 'h')
+        if CLIP == False:
+            chunks = []
+            for i in range(12):
+                # Break into 12 chunks
+                t1 = dataset.time[0] + i * np.timedelta64(2, 'h')
+                t2 = t1 + np.timedelta64(2, 'h')
 
-            chunk = dataset.sel(time=slice(t1, t2))
-            chunks.append(chunk)
+                chunk = dataset.sel(time=slice(t1, t2))
+                chunks.append(chunk)
 
-        [cdflib.xarray_to_cdf(f, f'./input_data_files/SO_{trange[0][:10]}_VDF_{i}.cdf') for i, f in enumerate(chunks)]
+            [cdflib.xarray_to_cdf(f, f'./input_data_files/SO_{trange[0][:10]}_VDF_{i}.cdf') for i, f in enumerate(chunks)]
+
+        else:
+            cdflib.xarray_to_cdf(dataset, f'./input_data_files/SO_{trange[0][:10]}_VDF.cdf')
 
 if __name__ == "__main__":
     # This is where the tests are going to be performed
@@ -396,9 +400,11 @@ if __name__ == "__main__":
     # tstart = '2020-01-26T00:00:00'
     # tend   = '2020-01-26T23:00:00'
 
-    # making the trange tuple
+    # making the trange list
     # trange = [tstart, tend]
-    trange = ['2016-01-11/00:57:04', '2016-01-11/01:57:04']
-    # trange = ['2020-07-17/00:00:00', '2020-07-17/02:57:00']
+    # trange = ['2020-07-14/10:00:00', '2020-07-14/15:00:00']
+    trange = ['2020-08-02/10:00:00', '2020-08-02/15:00:00']
+
+
     # saving the .cdf file with the formatted VDF from desired time interval
-    save_vdf_data(trange, spacecraft='MMS', PROBE='1', SUPPORT=True)
+    save_vdf_data(trange, spacecraft='SO', PROBE='1', SUPPORT=True, CLIP=True)
