@@ -44,7 +44,7 @@ ax[0].set_ylim([-90, 90])
 ax[0].set_aspect('equal')
 ax[0].set_xlabel(r'Aziumth ($\phi$)')
 ax[0].set_ylabel(r'Elevation ($\theta$)')
-ax[0].set_title(f'MMS-FPI at {E:.2f} [eV]')
+ax[0].set_title(f'(A) MMS-FPI at {E:.2f} [eV]')
 
 ax[1].pcolormesh(StepII_bundle['SLEP_PHI'], StepII_bundle['SLEP_THETA'], StepII_bundle['fine_from_fine'][E_idx],
                  cmap=cmap, vmin=vmin, vmax=vmax, rasterized=True)
@@ -53,8 +53,8 @@ ax[1].set_xlim([0, 360])
 ax[1].set_ylim([-90, 90])
 ax[1].set_aspect('equal')
 ax[1].set_xlabel(r'Aziumth ($\phi$)')
-ax[1].set_ylabel(r'Elevation ($\theta$)')
-ax[1].set_title('Slepian reconstruction')
+# ax[1].set_ylabel(r'Elevation ($\theta$)')
+ax[1].set_title('(B) Slepian reconstruction')
 
 ax[2].plot(StepII_bundle['V'], '.k')
 N2D = int(np.sum(StepII_bundle['V']))
@@ -62,7 +62,7 @@ ax[2].axvline(N2D, color='red', ls='-.')
 ax[2].set_aspect(43)
 ax[2].set_xlabel(r'$\alpha$')
 ax[2].set_ylabel(r'$\lambda_{\alpha}$')
-ax[2].set_title('Polar cap localization')
+ax[2].set_title('(C) Polar cap localization')
 
 plt.subplots_adjust(left=0.07, right=0.98, top=0.98, bottom=0.1, wspace=0.3)
 plt.savefig('Slepian_recdemo_MMS.pdf')
@@ -96,8 +96,8 @@ def plot_basis_functions(E, SE, V):
             ax[row,col].text(0.02, 0.75, r'$g_{%i}$'%basis_num, transform=ax[row,col].transAxes,
                              va='bottom', ha='left', color='black', fontsize=14, fontweight='bold')
 
-    fig.text(0.5, 0.04, r'Azimuth ($\phi$)', ha='center')
-    fig.text(0.001, 0.5, r'Elevation ($\theta$)', va='center', rotation='vertical')
+    fig.text(0.5, 0.04, r'Azimuth ($\phi$)', ha='center', fontsize=18)
+    fig.text(0.001, 0.5, r'Elevation ($\theta$)', va='center', rotation='vertical', fontsize=18)
 
     fig.subplots_adjust(right=0.965)
     cbar_ax = fig.add_axes([0.965, 0.25, 0.005, 0.65])
