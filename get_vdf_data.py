@@ -403,7 +403,7 @@ if __name__ == "__main__":
     # making the trange list
     # trange = [tstart, tend]
     # trange = ['2020-07-14/10:00:00', '2020-07-14/15:00:00']
-    trange = ['2020-08-02/10:00:00', '2020-08-02/15:00:00']
+    trange = ['2020-08-02/09:00:00', '2020-08-02/15:20:00']
 
 
     # saving the .cdf file with the formatted VDF from desired time interval
