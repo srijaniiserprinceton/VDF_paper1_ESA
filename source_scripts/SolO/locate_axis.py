@@ -73,7 +73,8 @@ def with_plot(rec_dict, time_idx, Nrows, Ncols):
         logvv = np.nan_to_num(logvv, posinf=np.nan, neginf=np.nan)
 
         #------------------MAKING DIAGNOSTIC PLOTS IF REQUIRED-----------------------#
-        plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, logvv)
+        vmin, vmax = rec_dict.vmin_t[time_idx], rec_dict.vmax_t[time_idx]
+        plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, logvv, vmin, vmax)
 
         # appending the located centers
         Eshell_info.append([E, Intensity, xcen, ycen])
@@ -104,8 +105,7 @@ def without_plot(rec_dict, time_idx, Nrows, Ncols):
 
     return Eshell_info
 
-def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, logvv):
-    vmin, vmax = 1, 7
+def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, logvv, vmin, vmax):
     im = ax.pcolormesh(pp_orig, 90 - tt_orig, logvv, cmap='inferno', rasterized=True, vmin=vmin, vmax=vmax)
     ax.text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax.transAxes,
             va='bottom', ha='left', color='white', fontweight='bold')

@@ -138,10 +138,10 @@ if __name__=='__main__':
     TH = 45                       # the angular radius of the polar cap [in degrees]
     iterative_fit = False          # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                       # minimum angular degree for polar Slepian generation
-    Lmax = 15                      # maximum angular degree for polar Slepian generation
+    Lmax = None                      # maximum angular degree for polar Slepian generation
     Ncart = 50                     # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250               # Minimum reliable energy shell [in km/s]
-    rcond_polcap = 1e-6          # Condition number for the inversion in polar caps
+    rcond_polcap = 0.0          # Condition number for the inversion in polar caps
     rcond_cart = 1e-4              # Condition number for the inversion on a 2D plane
     ignore_last_anode = False      # if we want to set the last anode counts to nan
     N2D_restrict = False
@@ -152,7 +152,8 @@ if __name__=='__main__':
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
     # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
-    filename='input_data_files/SO_2020-08-02_VDF.cdf'       # Change the naming convention so that is it SolO...
+    # filename='input_data_files/SO_2020-08-02_VDF.cdf'       # Change the naming convention so that is it SolO...
+    filename='input_data_files/SO_Test.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
     # calculating time in units of milliseconds
@@ -207,7 +208,7 @@ if __name__=='__main__':
     rec_moments = {}
 
     # for time_idx in tqdm(range(len(times))):
-    for time_idx in tqdm(range(533, 534)):
+    for time_idx in tqdm(range(0, 1)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
         # time_idx = 0         # time index of VDF to be reconstructed
         time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
@@ -245,17 +246,17 @@ if __name__=='__main__':
         write_pickle(VDF_3D_bundle, 'VDF3Dbundle_533_MMSplot')
         write_pickle(StepII_bundle_plotdict, 'StepIIbundle_533_MMSplot')
 
-        # plotting the 2D slice
-        plt.style.use('dark_background')
-        plt.figure()
-        plt.pcolormesh(VX[:,NTmesh//2], VY[:,NTmesh//2], VDF_3D_rec[:,NTmesh//2], vmin=0, vmax=7, cmap='inferno', rasterized=True)
-        plt.gca().set_aspect('equal')
-        plt.title(f'Time = {time_HMS}')
-        plt.colorbar()
-        plt.savefig(f'./VDF_paper1_plots/2D_MMS/2D_MMS_{time_idx}.png')
-        plt.close()
+        # # plotting the 2D slice
+        # plt.style.use('dark_background')
+        # plt.figure()
+        # plt.pcolormesh(VX[:,NTmesh//2], VY[:,NTmesh//2], VDF_3D_rec[:,NTmesh//2], vmin=0, vmax=7, cmap='inferno', rasterized=True)
+        # plt.gca().set_aspect('equal')
+        # plt.title(f'Time = {time_HMS}')
+        # plt.colorbar()
+        # plt.savefig(f'./VDF_paper1_plots/2D_MMS/2D_MMS_{time_idx}.png')
+        # plt.close()
 
-        plot_3D_VDF.plot_VDF(VX, VY, VZ, VDF_3D_rec, time_idx, time_HMS)
+        # plot_3D_VDF.plot_VDF(VX, VY, VZ, VDF_3D_rec, time_idx, time_HMS)
         sys.exit()
 
 

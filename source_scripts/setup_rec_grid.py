@@ -121,6 +121,11 @@ class MMS:
 
         self.makeplot = makeplot
 
+        # finding the vmin and vmax according to the time 
+        self.vmax_t = np.nanmax(np.log10(self.VDF), axis=(1,2,3)).astype('int')
+        self.vmax_t = np.nan_to_num(nan = 1.1, posinf=1.0, neginf=1.0)
+        self.vmin_t = np.ones_like(vmax_t)
+
 class SolO:
     def __init__(self, data_ESA, TH=45, Lmax=None, Nmesh=(100, 201, 101), Espline_order=3, makeplot = True):
         self.instrument = 'SolO'
@@ -174,12 +179,14 @@ class SolO:
         # Check Lmax
         dtheta_Nyq = np.max(np.diff(self.ESA_THETA[:,0,0,:]))
         dphi_Nyq = np.max(np.diff(self.ESA_PHI[:,0,:,0]))
-        self.Lmax_Nyq = int(np.min((90/dtheta_Nyq, 180/dphi_Nyq)))
+        self.Lmax_Nyq = int(np.min([np.ceil(180/dtheta_Nyq), np.ceil(180/dphi_Nyq)]))
         if Lmax is None: 
             self.Lmax = self.Lmax_Nyq
         else:
-            if Lmax > self.Lmax_Nyq: print("Lmax exceeds Nyquist. Resetting to Nyquist.")
+            if Lmax > self.Lmax_Nyq: print(f"Lmax exceeds Nyquist. Resetting to Lmax_Nyquist = {self.Lmax_Nyq}.")
             self.Lmax = min(Lmax, self.Lmax_Nyq)
+        
+        self.Lmax=21
         
         # to be initialized later in the workflow
         self.G = None
@@ -192,4 +199,9 @@ class SolO:
 
 
         self.makeplot = makeplot
+
+        # finding the vmin and vmax according to the time 
+        self.vmax_t = np.nanmax(np.log10(self.VDF), axis=(1,2,3)).astype('int')
+        self.vmax_t = np.nan_to_num(self.vmax_t, nan = 1.1, posinf=1.0, neginf=1.0)
+        self.vmin_t = np.ones_like(self.vmax_t)
 

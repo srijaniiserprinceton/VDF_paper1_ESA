@@ -69,11 +69,11 @@ class VDF_rec_polarcaps_Slepians:
             orig_phi_grid = self.ESA_PHI[self.time_idx, E_idx]
             orig_theta_grid = self.ESA_THETA[self.time_idx, E_idx]
 
-            img_hr = np.zeros_like(self.SLEP_PHI)
-            img_hr[15:24,26:37] = logvv.T
+            # img_hr = np.zeros_like(self.SLEP_PHI)
+            # img_hr[15:24,26:37] = logvv.T
 
-            # img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),
-            #                   (self.SLEP_PHI, self.SLEP_THETA+90), method='nearest')
+            img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),
+                              (self.SLEP_PHI, self.SLEP_THETA+90), method='linear', fill_value=0.0)
             
             # plt.figure()
             # plt.pcolormesh(self.SLEP_PHI, -self.SLEP_THETA, img_hr, vmin=1, vmax=7, cmap='inferno')
@@ -81,8 +81,6 @@ class VDF_rec_polarcaps_Slepians:
             # sys.exit()
 
             # fitting the polar Slepians
-            nan_mask_hr = np.isnan(img_hr)
-            img_hr[nan_mask_hr] = 0
             nan_mask_hr = np.isnan(img_hr)
             G_nonan_hr = self.G[:,~nan_mask_hr]
             M = G_nonan_hr @ G_nonan_hr.T 
@@ -99,7 +97,7 @@ class VDF_rec_polarcaps_Slepians:
         self.fine_from_fine = self.fine_from_fine[:,::-1,:]
 
     def plot_polar_rec_VDF(self, E_idx, ax, fine_from_finecoefs, xcirc, ycirc):
-        vmin, vmax = 1, 7
+        vmin, vmax = self.vmin_t[self.time_idx], self.vmax_t[self.time_idx]
         E = self.ENERGY[self.time_idx, E_idx, 0, 0]
         ax.pcolormesh(self.SLEP_PHI, self.SLEP_THETA, fine_from_finecoefs,
                       cmap='inferno', vmin=vmin, vmax=vmax, rasterized=True)
