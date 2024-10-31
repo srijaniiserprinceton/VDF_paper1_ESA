@@ -29,7 +29,7 @@ def colorax(vmin, vmax):
     return dict(cmin=vmin,
                 cmax=vmax)
 
-def plot_VDF(x, y, z, VDF, time_idx, time):
+def plot_VDF(x, y, z, VDF, time_idx, time, instrument):
     # cosmetic change to get a better viewing angle
     x *= -1
     y *= -1
@@ -60,5 +60,5 @@ def plot_VDF(x, y, z, VDF, time_idx, time):
                             colorbar_len=0.75,
                             **colorax(vmin, vmax)))
     fig1.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False)
-    fig1.write_image(f'./VDF_paper1_plots/3D_MMS/3D_{time_idx}.png')
+    fig1.write_image(f'./VDF_paper1_plots/3D_{instrument}/3D_{time_idx}.png')
     # fig1.close()

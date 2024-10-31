@@ -146,14 +146,14 @@ if __name__=='__main__':
     ignore_last_anode = False      # if we want to set the last anode counts to nan
     N2D_restrict = False
 
-    NEmesh, NPmesh, NTmesh = 100, 201, 101    # High resolution grid for final interpolation.
+    NEmesh, NPmesh, NTmesh = 200, 201, 101    # High resolution grid for final interpolation.
     Espline_order = 3                         # Spline order for final interpolation in energy.
 
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
     # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
-    # filename='input_data_files/SO_2020-08-02_VDF.cdf'       # Change the naming convention so that is it SolO...
-    filename='input_data_files/SO_Test.cdf'
+    filename='input_data_files/SO_2020-08-02_VDF.cdf'       # Change the naming convention so that is it SolO...
+    # filename='input_data_files/SO_Test.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
     # calculating time in units of milliseconds
@@ -208,7 +208,7 @@ if __name__=='__main__':
     rec_moments = {}
 
     # for time_idx in tqdm(range(len(times))):
-    for time_idx in tqdm(range(0, 1)):
+    for time_idx in tqdm(range(0, 10)):
         #------------------USER SPECIFIED PARAMETERS------------------------------------#
         # time_idx = 0         # time index of VDF to be reconstructed
         time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
@@ -246,18 +246,18 @@ if __name__=='__main__':
         write_pickle(VDF_3D_bundle, 'VDF3Dbundle_533_MMSplot')
         write_pickle(StepII_bundle_plotdict, 'StepIIbundle_533_MMSplot')
 
-        # # plotting the 2D slice
-        # plt.style.use('dark_background')
-        # plt.figure()
-        # plt.pcolormesh(VX[:,NTmesh//2], VY[:,NTmesh//2], VDF_3D_rec[:,NTmesh//2], vmin=0, vmax=7, cmap='inferno', rasterized=True)
-        # plt.gca().set_aspect('equal')
-        # plt.title(f'Time = {time_HMS}')
-        # plt.colorbar()
-        # plt.savefig(f'./VDF_paper1_plots/2D_MMS/2D_MMS_{time_idx}.png')
-        # plt.close()
+        # plotting the 2D slice
+        plt.style.use('dark_background')
+        plt.figure()
+        plt.pcolormesh(VX[:,NTmesh//2], VY[:,NTmesh//2], VDF_3D_rec[:,NTmesh//2], vmin=0, vmax=7, cmap='inferno', rasterized=True)
+        plt.gca().set_aspect('equal')
+        plt.title(f'Time = {time_HMS}')
+        plt.colorbar()
+        plt.savefig(f'./VDF_paper1_plots/2D_{instrument}/2D_{instrument}_{time_idx}.png')
+        plt.close()
 
-        # plot_3D_VDF.plot_VDF(VX, VY, VZ, VDF_3D_rec, time_idx, time_HMS)
-        sys.exit()
+        plot_3D_VDF.plot_VDF(VX, VY, VZ, VDF_3D_rec, time_idx, time_HMS, instrument)
+        # sys.exit()
 
 
 # cmaps = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Grays', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_grey', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gist_yerg', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'grey', 'hot', 'hot_r', 'hsv', 'hsv_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'viridis', 'viridis_r', 'winter', 'winter_r']
