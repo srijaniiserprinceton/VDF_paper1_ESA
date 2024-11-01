@@ -255,7 +255,7 @@ if __name__=='__main__':
 
         # plotting the histograms demo for fitting the mu_phi and mu_theta
         locate_axis.find_gyroaxis(rec_dict, 101)
-        # plt.style.use('default')
+        plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots(1, 2, figsize=(10,4), sharey=True)
 
         (mu, sigma) = norm.fit(rec_dict.Eshell_info[:,2])
@@ -280,7 +280,7 @@ if __name__=='__main__':
         plt.savefig('VDF_paper1_plots/final_plots/capfit2.pdf')
 
         # plotting the centroid location as a function of time
-        # plt.style.use('default')
+        plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots(2, 1, figsize=(10,4), sharex=True)
 
         ax[0].fill_between(times_datetime, rec_dict.mu_phi-rec_dict.mu_sigma, rec_dict.mu_phi+rec_dict.mu_sigma, alpha=0.25, color='k')
