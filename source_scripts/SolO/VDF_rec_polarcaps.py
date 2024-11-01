@@ -14,11 +14,9 @@ import sys
 import generate_2D_contour as gen_contour
 
 class VDF_rec_polarcaps_Slepians:
-    def __init__(self, mu_phi, mu_theta, rec_dict, time_idx, rcond=0.0, Nrows=4, Ncols=8):
+    def __init__(self, rec_dict, time_idx, rcond=0.0, Nrows=4, Ncols=8):
         self.time_idx = time_idx
         self.__dict__.update(rec_dict.__dict__)
-        self.mu_phi = self.ESA_PHI[0,0,int(np.round(mu_phi)),0]
-        self.mu_theta = self.ESA_THETA[0,0,0,int(np.round(mu_theta))] - 90
         self.rcond = rcond
         self.S = None
 
@@ -34,7 +32,7 @@ class VDF_rec_polarcaps_Slepians:
         if(self.makeplot):
             # plotting the circle around the domain
             theta_circ = np.linspace(0, 2*np.pi, 100)
-            xcirc, ycirc = self.TH * np.cos(theta_circ) + self.mu_phi, self.TH * np.sin(theta_circ) + self.mu_theta
+            xcirc, ycirc = self.TH * np.cos(theta_circ) + self.mu_phi[time_idx], self.TH * np.sin(theta_circ) + self.mu_theta[time_idx]
 
             fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)
             for i, E_idx in enumerate(range(40, 40 + (Nrows * Ncols))):
@@ -51,8 +49,6 @@ class VDF_rec_polarcaps_Slepians:
             for axs in ax.flatten(): 
                 axs.set_xlim([100, 300])
                 axs.set_ylim([-50, 50])
-                # axs.set_xlim([-900, 360])
-                # axs.set_ylim([, 90])
                 axs.set_aspect('equal')
             
             plt.savefig(f'VDF_paper1_plots/VDF_rec_polar_plot_{self.instrument}/{time_idx}.png')
@@ -74,11 +70,6 @@ class VDF_rec_polarcaps_Slepians:
 
             img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),
                               (self.SLEP_PHI, self.SLEP_THETA+90), method='linear', fill_value=0.0)
-            
-            # plt.figure()
-            # plt.pcolormesh(self.SLEP_PHI, -self.SLEP_THETA, img_hr, vmin=1, vmax=7, cmap='inferno')
-            # plt.title(f'E = {E}eV')
-            # sys.exit()
 
             # fitting the polar Slepians
             nan_mask_hr = np.isnan(img_hr)

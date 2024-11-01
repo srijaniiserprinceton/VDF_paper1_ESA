@@ -7,9 +7,6 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt
 plt.ion()    
 
-# imports from our custom package
-from . import fit_2D_gaussian as fit_gauss
-
 def find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8):
     if(rec_dict.makeplot): 
         fig, ax = with_plot(rec_dict, time_idx, Nrows, Ncols)

@@ -185,8 +185,17 @@ class SolO:
         else:
             if Lmax > self.Lmax_Nyq: print(f"Lmax exceeds Nyquist. Resetting to Lmax_Nyquist = {self.Lmax_Nyq}.")
             self.Lmax = min(Lmax, self.Lmax_Nyq)
-        
-        self.Lmax=21
+
+        # to store the gyro center in phi and theta
+        self.mu_phi = np.zeros(NTIME)
+        self.mu_theta = np.zeros(NTIME)
+        self.mu_sigma = np.zeros(NTIME)
+
+        # setting the range in energy indices which will be used for centroid finding and VDF width determination
+        self.E_minidx, self.E_maxidx = None, None
+
+        # array to store the Eshell info for plotting (in datascan_mode)
+        self.Eshell_info = None
         
         # to be initialized later in the workflow
         self.G = None
