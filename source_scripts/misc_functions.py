@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import spherepy as sp
+from scipy.special import sph_harm
 NAX = np.newaxis
 
 def grid_pol2cart(lnE, tt, pp, savegrids=False):
@@ -18,19 +19,35 @@ def grid_pol2cart(lnE, tt, pp, savegrids=False):
     
     return VX, VY, VZ
 
-def gen_SH(L, NPHI, NTHETA):
-    sh_basis = np.zeros(((L+1)**2, NTHETA, NPHI))
-    sh_coefs = sp.zeros_coefs(nmax=L, mmax=L)
+def gen_SH(rec_dict): # L, NPHI, NTHETA):
+
+    # Swap the order of the basis function.
+    sh_basis = np.zeros((rec_dict.NPHI_ESA, rec_dict.NTHETA_ESA, (rec_dict.Lmax+1)**2), dtype='complex128')
+    sh_coefs = sp.zeros_coefs(nmax=rec_dict.Lmax, mmax=rec_dict.Lmax)
 
     basis_count = 0
-    for ell in range(L+1):
+    for ell in range(rec_dict.Lmax+1):
         for m in range(-ell, ell+1):
             sh_coefs[ell, m] += 1.0
-            sh_basis[int(basis_count)] = sp.ispht(sh_coefs, nrows=NTHETA, ncols=NPHI).array.real
-            sh_coefs[ell, m] *= 0.0
+            sh_basis[:,:,int(basis_count)] = sp.ispht(sh_coefs, nrows=rec_dict.NTHETA_ESA, ncols=rec_dict.NPHI_ESA).array.T
+            sh_coefs[ell, m] *= 0.0j
             basis_count += 1
 
-    return sh_basis
+    rec_dict.G = sh_basis
+
+    
+def gen_SH_scipy(rec_dict, time_idx):
+    sh_basis = np.zeros((rec_dict.NPHI_ESA, rec_dict.NTHETA_ESA, (rec_dict.Lmax+1)**2), dtype='complex128')
+
+    basis_count = 0
+    for ell in range(rec_dict.Lmax+1):
+        for m in range(-ell, ell+1):
+            norm = np.sqrt( ((2 * ell + 1)/(4*np.pi)) * (np.math.factorial(ell - m)/np.math.factorial(ell + m))  )
+            sh_basis[:,:,int(basis_count)] = sph_harm(m, ell, np.radians(rec_dict.ESA_PHI[time_idx,0]), np.radians(rec_dict.ESA_THETA[time_idx,0]))
+            basis_count += 1
+
+    rec_dict.G = sh_basis
+    
 
 def gen_SLEP(rec_dict, N2D_restrict=False):
     import matlab.engine as matlab

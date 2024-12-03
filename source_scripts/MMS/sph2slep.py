@@ -66,7 +66,7 @@ class get_StepI_Slepdict:
     
 class get_StepI_SHdict:
     def __init__(self, phi_ESA, theta_ESA, instrument='MMS'):
-        self.phi_ESA, self.theta_ESA = phi_ESA, theta_ESA
+        # self.phi_ESA, self.theta_ESA = phi_ESA, theta_ESA
         self.instrument = instrument
 
         # the low resolution and high resolution grids
@@ -76,7 +76,7 @@ class get_StepI_SHdict:
         self.generate_SH_grid_MMS()
 
     def generate_SH_grid_MMS(self):
-        pp_ESA, tt_ESA = np.meshgrid(self.phi_ESA, self.theta_ESA, indexing='ij')
+        pp_ESA, tt_ESA = np.meshgrid(self.ESA_PHI, self.ESA_THETA, indexing='ij')
         Nphi, Ntheta = pp_ESA.shape
 
         self.lon_lr, self.lat_lr = pp_ESA, tt_ESA

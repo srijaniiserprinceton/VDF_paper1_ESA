@@ -130,40 +130,32 @@ class VDF_rec_polarcaps_Slepians:
         ax.text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax.transAxes,
                 va='bottom', ha='left', color='white', fontweight='bold')
 
-
-
 class VDF_rec_polarcaps_SphericalHarmonics:
-    def __init__(self, DATA, StepI_bundle, time_idx, SH_basis, instrument='MMS', Lmax=12, rcond=0.0, makeplot=True):
-        self.DATA = DATA
+    def __init__(self, rec_dict, time_idx, rcond=0.0):
         self.time_idx = time_idx
-        self.SH_hr = SH_basis
-        self.__dict__.update(StepI_bundle.__dict__)
-        self.Lmax = Lmax
+        self.__dict__.update(rec_dict.__dict__)
         self.rcond = rcond
-        self.instrument = instrument
-        self.makeplot = makeplot
 
         # these get flipped somehow when the Slepians are generated in Matlab
-        self.N_lat_lr, self.N_lon_lr = StepI_bundle.lon_lr.T.shape
-        self.N_lat_hr, self.N_lon_hr = StepI_bundle.lon_hr.T.shape
+        self.N_lat_lr, self.N_lon_lr = self.NTHETA_ESA, self.NPHI_ESA           # StepI_bundle.lon_lr.T.shape
+        self.N_lat_hr, self.N_lon_hr = self.NTmesh, self.NPmesh                 # StepI_bundle.lon_hr.T.shape
 
-        self.tt_lr_idx, self.pp_lr_idx = np.meshgrid(np.linspace(0, 180, self.N_lat_lr), np.linspace(0, 360, self.N_lon_lr), indexing='ij')
-        self.tt_hr_idx, self.pp_hr_idx = np.meshgrid(np.linspace(0, 180, self.N_lat_hr), np.linspace(0, 360, self.N_lon_hr), indexing='ij')
+        self.lat_lr, self.lon_lr = np.meshgrid(np.linspace(0, 180, self.NTHETA_ESA), np.linspace(0, 360, self.NPHI_ESA), indexing='ij')
+        self.lat_hr, self.lon_hr = np.meshgrid(np.linspace(0, 180, self.N_lat_hr), np.linspace(0, 360, self.N_lon_hr), indexing='ij')
 
         # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
-        self.DATA.VDF[np.isnan(self.DATA.VDF)] = 1e0
-        self.N_Eshells = self.DATA.VDF.shape[0]
+        self.VDF[np.isnan(self.VDF)] = 1e0
 
         # gyrotropized 2D VDF on a plane
-        self.fine_from_fine = np.zeros((self.N_Eshells, self.N_lat_hr, self.N_lon_hr))
+        self.fine_from_fine = np.zeros((self.NENERGY, self.NPHI_ESA, self.NTHETA_ESA))
 
-        self.coeffs_hr = np.zeros((self.N_Eshells, (self.Lmax+1)**2))
+        self.SLEP_coeffs = np.zeros((self.NENERGY, (self.Lmax+1)**2), dtype='complex128')
         self.recon_3D_VDF_MMS()
 
         # the final total fitted plot
         if(self.makeplot):
             fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)
-            for E_idx in range(self.N_Eshells):
+            for E_idx in range(self.NENERGY):
                 self.plot_polar_rec_VDF(E_idx, ax[E_idx//8, E_idx%8], self.fine_from_fine[E_idx])
 
             plt.subplots_adjust(top=0.96, bottom=0.05, left=0.03, right=0.99, wspace=0.05, hspace=0.05)
@@ -176,44 +168,42 @@ class VDF_rec_polarcaps_SphericalHarmonics:
             if(self.instrument=='MMS'):
                 for axs in ax.flatten(): 
                     axs.set_xlim([0, 360])
-                    axs.set_ylim([0, 180])
+                    axs.set_ylim([-90,90])
                     axs.set_aspect('equal')
             
             plt.savefig(f'VDF_paper1_plots/VDF_rec_polar_plot_MMS/{time_idx}.png')
-            # plt.close()
+            plt.close()
 
     def recon_3D_VDF_MMS(self):
         # looping over energy shells -> fitting Spherical Harmonics
-        for E_idx in range(self.N_Eshells):
-            E = self.DATA.ENERGY[E_idx, 0, 0]
-            vv = self.DATA.VDF[E_idx, :, :] 
-            data_vv = np.log10(vv)
-            data_vv = np.nan_to_num(data_vv, posinf=np.nan, neginf=np.nan)
-            data = np.zeros((self.N_lat_lr, self.N_lon_lr))
-            # tiling the MMS-ion data in the correct location
-            data = data_vv
-
-            # interpolating the data to complete coverage grid before fitting Spherical Harmonics
-            img_hr = griddata((self.lon_lr.flatten(), self.lat_lr.flatten()), data.flatten(),
-                              (self.lon_hr, self.lat_hr), method='linear').T
-
-            # fitting the polar Slepians
-            nan_mask_hr = np.isnan(img_hr)
-            SH_nonan_hr = self.SH_hr[:,~nan_mask_hr]
-            M_hr = SH_nonan_hr @ SH_nonan_hr.T 
-            __, self.S_hr, __ = np.linalg.svd(M_hr)
-            I = np.identity(M_hr.shape[0])
-            self.coeffs_hr[E_idx] = np.linalg.inv(SH_nonan_hr @ SH_nonan_hr.T +  self.S_hr.max() * self.rcond * I) @ SH_nonan_hr @ img_hr[~nan_mask_hr]
+        for E_idx in range(self.NENERGY):
+            E = self.ENERGY[self.time_idx, E_idx, 0, 0]
+            vv = self.VDF[self.time_idx, E_idx, :, :]
+            data = np.log10(vv)
+            data = np.nan_to_num(data, posinf=np.nan, neginf=np.nan)
+            
+            img_hr = data * 1.0
+            
+            # fitting the Spherical Harmonics
+            nan_mask = np.isnan(img_hr)
+            G = self.G * 1.0                    # This will be replaced with self.G in upcoming version
+            G_mask = G[~nan_mask,:]
+            M = np.conjugate(G_mask).T @ G_mask 
+            __, self.S_hr, __ = np.linalg.svd(M)
+            I = np.identity(M.shape[0])
+            inverted_M = np.linalg.inv(M + self.S_hr.max() * self.rcond * I)
+            self.SLEP_coeffs[E_idx] = inverted_M @ np.conjugate(G_mask).T @ img_hr[~nan_mask]
 
             # reconstructing from the polar Slepians and plotting
-            fine_from_finecoefs = np.dot(np.moveaxis(self.SH_hr, 0, -1), self.coeffs_hr[E_idx])
-            self.fine_from_fine[E_idx] += fine_from_finecoefs
+            rec_coefs = np.dot(G, self.SLEP_coeffs[E_idx])
+            self.fine_from_fine[E_idx] = rec_coefs       
 
     def plot_polar_rec_VDF(self, E_idx, ax, fine_from_finecoefs):
         vmin, vmax = 1, 7
         E = self.ENERGY[self.time_idx, E_idx, 0, 0]
-        ax.pcolormesh(self.lon_hr, self.lat_hr, fine_from_finecoefs.T,
+        ax.pcolormesh(self.SLEP_PP, self.SLEP_TT, fine_from_finecoefs,
                       cmap='inferno', vmin=vmin, vmax=vmax, rasterized=True)
+        # ax.plot(xcirc, ycirc, '--r')
         ax.set_aspect('equal')
         ax.set_xlim([0, 360])
         ax.text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax.transAxes,

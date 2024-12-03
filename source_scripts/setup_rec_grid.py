@@ -49,29 +49,30 @@ class MMS:
         self.instrument = 'MMS'
 
         NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
-        VDF = np.zeros((NTIME, NENERGY, NPHI+1, NTHETA))
-        VDF_ERR = np.zeros((NTIME, NENERGY, NPHI+1, NTHETA))
-        ENERGY = np.zeros((NTIME, NENERGY, NPHI+1, NTHETA))
-        THETA = np.zeros((NTIME, NENERGY, NPHI+1, NTHETA))
-        PHI = np.zeros((NTIME, NENERGY, NPHI+1, NTHETA))
+        VDF = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
+        VDF_ERR = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
+        ENERGY = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
+        THETA = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
+        PHI = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
 
-        VDF[:,:,:NPHI,:] = data_ESA.vdf.data
-        VDF_ERR[:,:,:NPHI,:] = data_ESA.vdf_err.data
-        ENERGY[:,:,:NPHI,:] = data_ESA.energy.data
-        THETA[:,:,:NPHI,:] = data_ESA.theta.data
-        PHI[:,:,:NPHI,:] = data_ESA.phi.data
+        VDF[:,:,:,:] = data_ESA.vdf.data
+        VDF_ERR[:,:,:,:] = data_ESA.vdf_err.data
+        ENERGY[:,:,:,:] = data_ESA.energy.data
+        THETA[:,:,:,:] = data_ESA.theta.data
+        PHI[:,:,:,:] = data_ESA.phi.data
 
         # we want to scale VDF such that the lowest non-zero entry is 1.0
         VDF[VDF == 0] = np.nan
-        self.VDF_minval_true = np.nanmin(VDF)
-        VDF = VDF / self.VDF_minval_true
+        self.VDF_minval_true = np.nanmin(VDF, axis=(2,3))
+        self.VDF_minval_true[np.isnan(self.VDF_minval_true)] = 0.0
+        VDF = VDF / self.VDF_minval_true[:, :, None, None]
 
         # populating the ghost cell in phi
-        VDF[:,:,NPHI,:] = (VDF[:,:,0,:] + VDF[:,:,NPHI-1,:])/2.
-        VDF_ERR[:,:,NPHI,:] = (VDF_ERR[:,:,0,:] + VDF_ERR[:,:,NPHI-1,:])/2.
-        ENERGY[:,:,NPHI,:] = ENERGY[:,:,0,:]
-        THETA[:,:,NPHI,:] = THETA[:,:,0,:]
-        PHI[:,:,NPHI,:] = PHI[:,:,NPHI-1,:] + 11.25   # IN DEGREES
+        # VDF[:,:,NPHI,:] = (VDF[:,:,0,:] + VDF[:,:,NPHI-1,:])/2.
+        # VDF_ERR[:,:,NPHI,:] = (VDF_ERR[:,:,0,:] + VDF_ERR[:,:,NPHI-1,:])/2.
+        # ENERGY[:,:,NPHI,:] = ENERGY[:,:,0,:]
+        # THETA[:,:,NPHI,:] = THETA[:,:,0,:]
+        # PHI[:,:,NPHI,:] = PHI[:,:,NPHI-1,:] + 11.25   # IN DEGREES
 
         self.VDF = VDF * 1.0
         self.VDF_ERR = VDF_ERR * 1.0
@@ -82,23 +83,25 @@ class MMS:
         self.ESA_PHI = PHI * 1.0
 
         self.NENERGY = NENERGY
-        self.NPHI_ESA = NPHI + 1
+        self.NPHI_ESA = NPHI
         self.NTHETA_ESA = NTHETA
 
-        # the grid to be used for Slepian reconstruction
-        self.SLEP_THETA = np.linspace(0, 180, self.NTHETA_ESA) - 90
+        # the grid to be used for Slepian reconstruction (Should consider changing name to REC_THETA, REC_PHI)
+        self.SLEP_THETA = 90 - np.linspace(0, 180, self.NTHETA_ESA) 
         self.SLEP_PHI = np.linspace(0, 360, self.NPHI_ESA)
 
-        self.NPHI_SLEP = NPHI + 1
+        # Why is this being calculated since this is exactly NPHI_ESA and NTHETA_ESA
+        self.NPHI_SLEP = NPHI
         self.NTHETA_SLEP = NTHETA
 
+        # Define the mesgrid for the slepian data.
         self.SLEP_PP, self.SLEP_TT = np.meshgrid(self.SLEP_PHI, self.SLEP_THETA, indexing='ij')
 
         # Setup slepian directory
         self.slep_dir = misc_functions.read_config()[0]
 
         # Check Lmax
-        self.Lmax_Nyq = int(self.NTHETA_ESA / 2)
+        self.Lmax_Nyq = min(int(self.NTHETA_ESA - 2), int((self.NPHI_ESA - 2)/ 2))
         if Lmax is None: 
             self.Lmax = self.Lmax_Nyq
         else:
@@ -123,8 +126,8 @@ class MMS:
 
         # finding the vmin and vmax according to the time 
         self.vmax_t = np.nanmax(np.log10(self.VDF), axis=(1,2,3)).astype('int')
-        self.vmax_t = np.nan_to_num(nan = 1.1, posinf=1.0, neginf=1.0)
-        self.vmin_t = np.ones_like(vmax_t)
+        # self.vmax_t = np.nan_to_num(nan = 1.1, posinf=1.0, neginf=1.0)
+        self.vmin_t = np.ones_like(self.vmax_t)
 
 class SolO:
     def __init__(self, data_ESA, TH=45, Lmax=None, Nmesh=(100, 201, 101), Espline_order=3, makeplot = True):

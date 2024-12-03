@@ -14,7 +14,7 @@ def get_3D_VDF(vdf_rec_dict):
     SLEP_coeffs_interp = np.zeros((vdf_rec_dict.NEmesh, NSlepians))
 
     # interpolating the Slepian functions in a finer grid in theta and phi
-    p_old, t_old = vdf_rec_dict.SLEP_PHI, vdf_rec_dict.SLEP_THETA
+    p_old, t_old = vdf_rec_dict.SLEP_PP, vdf_rec_dict.SLEP_TT
     thetamin, thetamax = t_old.min(), t_old.max()
     phimin, phimax = p_old.min(), p_old.max()
     p, t = np.linspace(phimin, phimax, vdf_rec_dict.NPmesh), np.linspace(thetamin, thetamax, vdf_rec_dict.NTmesh)
@@ -30,7 +30,7 @@ def get_3D_VDF(vdf_rec_dict):
         # B-spline interpolation
         SLEP_coeffs_interp[:, Slep_idx] = spline(lnE_mesh)
         
-        G_interp[Slep_idx] = interpolate.griddata(points, vdf_rec_dict.G[Slep_idx].flatten(), (pp, tt))
+        G_interp[Slep_idx] = interpolate.griddata(points, vdf_rec_dict.G[:,:,Slep_idx].flatten(), (pp, tt))
 
     # inner product with Slepian function basis to make full 3D structure
     # VDF_3D_polar = coeffs_hr_interp @ np.moveaxis(vdf_rec_dict.G, 0, 1)

@@ -11,6 +11,87 @@ import matplotlib.pyplot as plt
 from scipy.integrate import simps
 from calculations.merge_vdf import merge_vdf_data
 
+def calc_moments_delta(vdf, velocity, theta, phi, METHOD='trapz'):
+    """
+    This function uses the np.trapz function to perform the integration
+    
+    VDF should have dimension: E_dim, Theta_dim, Phi_dim
+
+    Parameters:
+    -----------
+    vdf : np.ndarray of dimension (E_dim, Theta_dim, Phi_dim)
+        The ion vdf values in s^3/m^-6
+    velocity : np.ndarray of dimension E_dim
+        The corresponding velocity in m/s. 
+        TODO: Convert function to take in energy and do the 
+        converion to velocity inside function.
+    theta : np.ndarray of dimension Theta_dim
+        Defined theta values where VDF is measured
+    phi : np.ndarray of dimension Phi_dim
+        Defined phi values where VDF is measured
+
+    Returns:
+    --------
+    density : float
+        Zeroth moment of ion VDF corresponding to density
+    uvec : 3-element np.ndarray 
+        First moment of ion VDF corresopnding to velocity.
+    p_mat : np.ndarray of dimension (3 x 3)
+        The corresponding pressure tensor. 
+    """
+
+    if np.max(theta) > 2. * np.pi:
+        theta = np.radians(theta)
+    if np.max(phi) > 4. * np.pi:
+        phi = np.radians(phi)
+
+    sinT = np.sin(theta)
+    cosT = np.cos(theta)
+
+    sinP = np.sin(phi)
+    cosP = np.cos(phi)
+
+    if METHOD == 'trapz':
+        integral = np.trapz
+    if METHOD == 'simps':
+        integral = simps
+
+    dphi = np.radians(11.25)
+    dtheta = np.radians(11.25)
+    # integrate over phi
+    density = integral(integral(integral(vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)
+
+    # Convert to Cartesian velocity
+    vx = -velocity[:,None,None] * cosP[None, None, :] * sinT[None, :,None]
+    vy = -velocity[:,None,None] * sinP[None, None, :] * sinT[None, :,None]
+    vz = -velocity[:,None,None]                       * cosT[None, :,None]
+
+    ux = integral(integral(integral(vx * vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)/density
+    uy = integral(integral(integral(vy * vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)/density
+    uz = integral(integral(integral(vz * vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)/density
+
+    uvec = np.array([ux, uy, uz])
+
+    vx_p = vx - ux
+    vy_p = vy - uy
+    vz_p = vz - uz
+
+    pxx = integral(integral(integral(vx_p**2 * vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)
+    pyy = integral(integral(integral(vy_p**2 * vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)
+    pzz = integral(integral(integral(vz_p**2 * vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)
+
+    pxy = integral(integral(integral(vx_p * vy_p * vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)
+    pxz = integral(integral(integral(vx_p * vz_p * vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)
+    pyz = integral(integral(integral(vy_p * vz_p * vdf, dx=dphi) * sinT, dx=dtheta) * velocity**2, x=velocity)
+
+    p_mat = np.array([[pxx, pxy, pxz],
+                      [pxy, pyy, pyz],
+                      [pxz, pyz, pzz]]
+    )
+
+    return(density, uvec, p_mat)
+
+
 def calc_moments(vdf, velocity, theta, phi, METHOD='trapz'):
     """
     This function uses the np.trapz function to perform the integration
@@ -97,7 +178,7 @@ def spher_moments(vdf, velocity, theta, phi):
     Parameters:
     -----------
     vdf : np.ndarray of dimension (E_dim, Theta_dim, Phi_dim)
-        The ion vdf values in s^3/m^-6
+        The ion vdf values in s^3/m^6
     velocity : np.ndarray of dimension E_dim
         The corresponding velocity in m/s. 
         TODO: Convert function to take in energy and do the 
