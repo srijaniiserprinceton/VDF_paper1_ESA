@@ -200,7 +200,7 @@ im4 = ax4.pcolormesh(XX, YY, gyrotropic_joint_recon_2D_VDF(span_data), cmap='inf
 ax4.set_aspect('equal')
 ax4.set_xlim([0,1000])
 ax4.set_ylim([-600,600])
-ax4.text(0.55, 0.9, f'SPAN + SPC', transform=ax4.transAxes,
+ax4.text(0.53, 0.9, f'SPAN + SPC', transform=ax4.transAxes,
          va='bottom', ha='left', color='white', fontweight='bold')
 
 # Define an axes area and draw a slider in it

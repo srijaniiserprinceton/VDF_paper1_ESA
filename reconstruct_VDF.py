@@ -79,16 +79,16 @@ def reconstruct_from_SolO_Slepians(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     locate_axis.find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8)
 
-    sys.exit()
-
     if(angular_basis == 'Slepians'):
         # saving these files as MATLAB readable arrays for generating Slepian functions
-        mdict = {'phi0': rec_dict.mu_phi[time_idx], 'theta0': rec_dict.mu_theta[time_idx], 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
+        mdict = {'phi0': rec_dict.mu_phi[time_idx], 'theta0': rec_dict.mu_theta[time_idx]+90, 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
                 'theta_grid': rec_dict.SLEP_TT.flatten(), 'Nphi': rec_dict.NPHI_SLEP, 'Ntheta': rec_dict.NTHETA_SLEP}
         savemat(f'./input_data_files/Slepian_functions/slepgen_grid_{instrument}_HIGHRES.mat', mdict)
 
         # generating the Slepian basis functions
         misc_funcs.gen_SLEP(rec_dict, N2D_restrict=N2D_restrict)
+    
+    sys.exit()
     
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
     StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, rcond=rcond_polcap,
@@ -182,16 +182,16 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'MMS'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
-    angular_basis = 'SphericalHarmonics'      # 'SphericalHarmonics'
+    instrument = 'PSP-SPAN'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
+    angular_basis = 'Slepians'      # 'SphericalHarmonics'
     makeplot = False                # whether we want to save the diagnostic plots
     TH = 45                         # the angular radius of the polar cap [in degrees]
-    iterative_fit = False           # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
+    iterative_fit = True           # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
     Lmax = 14                       # maximum angular degree for polar Slepian generation
     Ncart = 50                      # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250                # Minimum reliable energy shell [in km/s]
-    rcond_polcap = 0                # Condition number for the inversion in polar caps
+    rcond_polcap = 1e-6                # Condition number for the inversion in polar caps
     rcond_cart = 1e-4               # Condition number for the inversion on a 2D plane
     ignore_last_anode = False       # if we want to set the last anode counts to nan
     N2D_restrict = True             # if we want to truncate the basis functions to Shannon number
@@ -201,8 +201,8 @@ if __name__=='__main__':
     Espline_order = 3                         # Spline order for final interpolation in energy.
 
     #----------------------READING THE SOURCE FILE----------------------------------#
-    # filename = './input_data_files/2020-01-26_VDFs.cdf'
-    filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
+    filename = './input_data_files/2020-01-26_VDFs.cdf'
+    # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
     # filename='input_data_files/SO_2020-07-16_VDF.cdf'       # Change the naming convention so that is it SolO...
     # filename='input_data_files/SO_Test.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
@@ -210,7 +210,7 @@ if __name__=='__main__':
     # calculating time in units of milliseconds
     times_datetime = func(data.unix_time.values)
     times = (times_datetime - times_datetime[0]) / timedelta(seconds=1)
-
+    # sys.exit()
     if(instrument=='PSP-SPAN'): 
         rec_dict = setup_rec_grid.PSP(data, TH)
         reconstruct_func = reconstruct_from_PSP
@@ -247,6 +247,8 @@ if __name__=='__main__':
 
     data_moments = {}
     rec_moments = {}
+
+    # sys.exit()
 
     if(datascan_mode):
         for time_idx in tqdm(range(len(times))):
@@ -345,10 +347,10 @@ if __name__=='__main__':
 
     else:
         # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(0,45)): #, 667)):
+        for time_idx in tqdm(range(36,37)): #, 667)):
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
-            # StepII_bundle = reconstruct_func(time_idx)
-            lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
+            StepII_bundle = reconstruct_func(time_idx)
+            # lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
             
             # # calculating the moments for comparison
             data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS_SH(time_idx, mask_noisy=False)
