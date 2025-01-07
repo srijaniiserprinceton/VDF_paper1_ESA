@@ -179,8 +179,8 @@ def write_pickle(x, fname):
 
 if __name__=='__main__':
     instrument = 'MMS'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
-    angular_basis = 'SphericalHarmonics'      # 'Slepians' or 'SphericalHarmonics'
-    makeplot = False                # whether we want to save the diagnostic plots
+    angular_basis = 'Slepians'      # 'Slepians' or 'SphericalHarmonics'
+    makeplot = True                # whether we want to save the diagnostic plots
     TH = 85                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
@@ -343,7 +343,7 @@ if __name__=='__main__':
 
     else:
         # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(1)): # 533
+        for time_idx in tqdm(range(533,534)): # 533
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
             lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
@@ -353,7 +353,7 @@ if __name__=='__main__':
                 data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS(time_idx, mask_noisy=False)
             else:
                 data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS_SH(time_idx, mask_noisy=False)
-            continue
+            # continue
             # # plotting the uninterpolated VDF
             # plot_VDF.plot_VDF(StepII_bundle, time_idx)
             # continue
@@ -380,6 +380,7 @@ if __name__=='__main__':
             StepII_bundle_plotdict['Slep_coeffs'] = StepII_bundle.SLEP_coeffs
             write_pickle(VDF_3D_bundle, 'VDF3Dbundle_533_MMSplot')
             write_pickle(StepII_bundle_plotdict, 'StepIIbundle_533_MMSplot')
+            continue
 
             # plotting the 2D slice
             plt.style.use('dark_background')

@@ -34,7 +34,7 @@ VDF_rec_dict = read_pickle(f'VDF3Dbundle_{tstamp}_MMSplot')
 # making the first set of plots (energy shell comparison)
 fig, ax = plt.subplots(3, 4, sharex=True, sharey=True, figsize=(12,6))
 
-vmin, vmax = 1, 7
+vmin, vmax = 0, 3
 cmap = 'inferno'
 
 count = 1
@@ -84,7 +84,7 @@ fig.text(0.001, 0.5, r'Elevation ($\theta$)', va='center', rotation='vertical')
 plt.subplots_adjust(left=0.06, right=0.97, hspace=0.05, wspace=0.05, top=0.95)
 
 fig.subplots_adjust(right=0.94)
-cbar_ax = fig.add_axes([0.96, 0.15, 0.01, 0.75])
+cbar_ax = fig.add_axes([0.955, 0.15, 0.01, 0.75])
 fig.colorbar(im, cax=cbar_ax)
 
 # Draw a horizontal lines at those coordinates
@@ -113,13 +113,14 @@ VX, VY, VZ = grid_pol2cart()
 fig, ax = plt.subplots(1, 3, figsize=(12,4.5), sharex=True, sharey=True)
 vv = StepII_bundle['VDF']
 logvv = np.nan_to_num(np.log10(vv), nan=np.nan, posinf=np.nan, neginf=np.nan)
+logvv[logvv==0] = np.nan
 
 # plotting the cut in theta
 theta_lr_slice = 8
 theta_hr_slice = 53
 
 ax[0].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], logvv[tstamp, :, :, theta_lr_slice],
-                 vmin=0, vmax=7, cmap='inferno', rasterized=True)
+                 vmin=0, vmax=3, cmap='inferno', rasterized=True)
 ax[0].set_xlim([-1500,1500])
 ax[0].set_ylim([-1500,1500])
 ax[0].set_aspect('equal')
@@ -127,15 +128,15 @@ ax[0].set_title('(C1) MMS-FPI data', fontsize=12, fontweight='bold')
 
 ax[1].set_facecolor('black')
 ax[1].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], StepII_bundle['fine_from_fine'][:,theta_lr_slice,:],
-                 vmin=0, vmax=7, cmap='inferno', rasterized=True)
+                 vmin=0, vmax=3, cmap='inferno', rasterized=True)
 ax[1].set_xlim([-1500,1500])
 ax[1].set_ylim([-1500,1500])
 ax[1].set_aspect('equal')
 ax[1].set_title('(C2) Slepian fit at FPI resolution', fontsize=12, fontweight='bold')
 
 ax[2].set_facecolor('black')
-ax[2].pcolormesh(VDF_rec_dict['VX'][:,theta_hr_slice], VDF_rec_dict['VY'][:,theta_hr_slice], VDF_rec_dict['VDF_3D_rec'][:,theta_hr_slice],
-               vmin=0, vmax=7, cmap='inferno', rasterized=True)
+ax[2].pcolormesh(VDF_rec_dict['VX'][:,theta_hr_slice], VDF_rec_dict['VY'][:,theta_hr_slice], VDF_rec_dict['VDF_3D_rec'][:,theta_hr_slice,:],
+               vmin=0, vmax=3, cmap='inferno', rasterized=True)
 ax[2].set_xlim([-1500,1500])
 ax[2].set_ylim([-1500,1500])
 ax[2].set_aspect('equal')
