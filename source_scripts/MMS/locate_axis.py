@@ -152,7 +152,7 @@ def Gauss_2dg(data, error=None, mask=None):
     return gfit.x_mean_1.value, gfit.y_mean_1.value, gfit(x, y)
 
 def plot_diagnostic_panels(ax, E, pp_orig, tt_orig, logvv):
-    vmin, vmax = 1, 7
+    vmin, vmax = 1, 5
     im = ax.pcolormesh(pp_orig, 90 - tt_orig, logvv, cmap='inferno', rasterized=True, vmin=vmin, vmax=vmax)
     ax.text(0.05, 0.05, f'{E:.2f} [eV]', transform=ax.transAxes,
             va='bottom', ha='left', color='white', fontweight='bold')

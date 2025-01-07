@@ -6,6 +6,7 @@ This is the driver script that should be run to get the reconstructed VDFs.
 
 # import statements
 import cdflib, sys, pickle
+# import cdflib.xarray
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt; plt.ion()
@@ -48,32 +49,19 @@ def reconstruct_from_PSP(time_idx):
     VDF_rec_dict['theta0'] = VDF_2D_rec.theta0
     write_pickle(VDF_rec_dict, f'./output_data_files/VDF_rec_pklfiles/VDF_2D_rec_{time_idx}')
 
-def reconstruct_from_MMS_Slepians(time_idx, angular_basis):
+def reconstruct_from_MMS_Slepians(time_idx):
     #=============STEP I: Plots the VDF on each Energy Shell (Does not really find gyrocenter)=======================#
     locate_axis.find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8)
 
-    if(angular_basis == 'Slepians'):
-        # saving these files as MATLAB readable arrays for generating Slepian functions
-        mdict = {'phi0': 180, 'theta0': 90, 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
-                'theta_grid': rec_dict.SLEP_TT.flatten(), 'Nphi': rec_dict.NPHI_SLEP, 'Ntheta': rec_dict.NTHETA_SLEP}
-        savemat(f'./input_data_files/Slepian_functions/slepgen_grid_{instrument}_HIGHRES.mat', mdict)
-
-        # generating the Slepian basis functions
-        misc_funcs.gen_SLEP(rec_dict, N2D_restrict=N2D_restrict)
-
     #------------------------saving the theta and phi grid for generating Slepians-on-polar-cap---------------------#
     # StepI_bundle = sph2slep.get_StepI_Slepdict(rec_dict, TH)
-    # return None
 
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
     StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, rcond=rcond_polcap)
 
-    # return StepII_bundle
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
     lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle)
-    # sys.exit()
     return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
-
 
 def reconstruct_from_SolO_Slepians(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
@@ -99,6 +87,14 @@ def reconstruct_from_SolO_Slepians(time_idx):
 
     return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
 
+def reconstruct_from_SolO_SphericalHarmonics(time_idx):
+    #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
+    locate_axis.find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8)
+
+    misc_funcs.gen_SH_scipy(rec_dict, time_idx)
+
+    sys.exit()
+
 def reconstruct_from_MMS_SphericalHarmonics(time_idx):
     #=============STEP I: Finding effective axis of gyrotropic across all relevant shells===========================#
     # mu_phi, mu_theta, phi_theta_cen = locate_axis.find_gyroaxis(DATA, time_idx, TH=TH, Nrows=4, Ncols=8, makeplot=True)
@@ -114,7 +110,7 @@ def reconstruct_from_MMS_SphericalHarmonics(time_idx):
     StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_SphericalHarmonics(rec_dict, time_idx, rcond=rcond_polcap)
     # return(StepII_bundle)
     # return(StepII_bundle)
-    # # sys.exit()
+    # sys.exit()
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
     lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle)
     return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
@@ -128,10 +124,9 @@ def reconstruct_from_MMS_SphericalHarmonics(time_idx):
     VDF_rec_dict['theta0'] = VDF_2D_rec.theta0
     write_pickle(VDF_rec_dict, f'./output_data_files/VDF_rec_pklfiles/VDF_2D_rec_{time_idx}')
 
-
 def calc_moments_MMS(time_idx, mask_noisy=False):
-    DATA_VDF = np.transpose(StepII_bundle.VDF[time_idx], [0, 2, 1]) * 1e12 * rec_dict.VDF_minval_true
-    REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * 1e12 * rec_dict.VDF_minval_true
+    DATA_VDF = np.transpose(StepII_bundle.VDF[time_idx] * 1e12 * rec_dict.VDF_minval_true[time_idx,:, None, None], [0, 2, 1])
+    REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * 1e12 * rec_dict.VDF_minval_true[time_idx, :, None, None]
 
     # removing the parts of the data and reconstructed VDF which have larger than NSR = 0.7
     if(mask_noisy):
@@ -139,17 +134,18 @@ def calc_moments_MMS(time_idx, mask_noisy=False):
         err_mask = DATA_VDF_ERR/DATA_VDF > 0.5
         DATA_VDF[err_mask] = 0.0
 
-    velocity = 13.8 * np.sqrt(StepII_bundle.ENERGY[time_idx, :, 0, 0]) * 1000
+    velocity = 13.85 * np.sqrt(StepII_bundle.ENERGY[time_idx, :, 0, 0]) * 1000
 
     DATA_theta, DATA_phi = StepII_bundle.ESA_THETA[time_idx,0,0,:], StepII_bundle.ESA_PHI[time_idx,0,:,0]
-    REC_theta, REC_phi = StepII_bundle.SLEP_THETA[:,0]+90, StepII_bundle.SLEP_PHI[0,:]
+    REC_theta, REC_phi = 90-StepII_bundle.SLEP_THETA[:,0], StepII_bundle.SLEP_PHI[0,:]
 
     # adjsuting the data phi to go from 0->360
     DATA_phi = DATA_phi - DATA_phi[0]
+    #DATA_theta = DATA_theta - DATA_theta[0]
 
     # in SI units
-    DATA_moments = calc_moments(DATA_VDF, velocity, np.radians(DATA_theta), np.radians(DATA_phi))
-    REC_moments = calc_moments(REC_VDF, velocity, np.radians(REC_theta), np.radians(REC_phi))
+    DATA_moments = calc_moments_delta(DATA_VDF, velocity, np.radians(DATA_theta), np.radians(DATA_phi))
+    REC_moments = calc_moments_delta(REC_VDF, velocity, np.radians(DATA_theta), np.radians(DATA_phi))
 
     return DATA_moments, REC_moments
 
@@ -182,11 +178,11 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'PSP-SPAN'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
-    angular_basis = 'Slepians'      # 'SphericalHarmonics'
+    instrument = 'MMS'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
+    angular_basis = 'SphericalHarmonics'      # 'Slepians' or 'SphericalHarmonics'
     makeplot = False                # whether we want to save the diagnostic plots
-    TH = 45                         # the angular radius of the polar cap [in degrees]
-    iterative_fit = True           # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
+    TH = 85                         # the angular radius of the polar cap [in degrees]
+    iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
     Lmax = 14                       # maximum angular degree for polar Slepian generation
     Ncart = 50                      # effective Shannon number of 2D Cartesian Slepian functions
@@ -194,15 +190,15 @@ if __name__=='__main__':
     rcond_polcap = 1e-6                # Condition number for the inversion in polar caps
     rcond_cart = 1e-4               # Condition number for the inversion on a 2D plane
     ignore_last_anode = False       # if we want to set the last anode counts to nan
-    N2D_restrict = True             # if we want to truncate the basis functions to Shannon number
+    N2D_restrict = False             # if we want to truncate the basis functions to Shannon number
     datascan_mode = False           # if we want to scan over the time interval to find the centroid
 
     NEmesh, NPmesh, NTmesh = 200, 201, 101    # High resolution grid for final interpolation.
     Espline_order = 3                         # Spline order for final interpolation in energy.
 
     #----------------------READING THE SOURCE FILE----------------------------------#
-    filename = './input_data_files/2020-01-26_VDFs.cdf'
-    # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
+    # filename = './input_data_files/2020-01-26_VDFs.cdf'
+    filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
     # filename='input_data_files/SO_2020-07-16_VDF.cdf'       # Change the naming convention so that is it SolO...
     # filename='input_data_files/SO_Test.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
@@ -219,8 +215,14 @@ if __name__=='__main__':
 
     # full FOV instrument
     elif(instrument=='MMS'): 
-        rec_dict = setup_rec_grid.MMS(data, TH, Lmax=Lmax, Nmesh=(NEmesh, NPmesh, NTmesh), Espline_order=Espline_order, makeplot=makeplot)
+        rec_dict = setup_rec_grid.MMS(data, TH, Lmax=Lmax, Nmesh=(NEmesh, NPmesh, NTmesh), Espline_order=Espline_order, angular_basis=angular_basis, makeplot=makeplot)
         if(angular_basis == 'Slepians'):
+            mdict = {'phi0': 180, 'theta0': 90, 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
+            'theta_grid': rec_dict.SLEP_TT.flatten(), 'Nphi': rec_dict.NPHI_SLEP, 'Ntheta': rec_dict.NTHETA_SLEP}
+            savemat(f'./input_data_files/Slepian_functions/slepgen_grid_{instrument}_HIGHRES.mat', mdict)
+
+            # generating the Slepian basis functions
+            misc_funcs.gen_SLEP(rec_dict, N2D_restrict=N2D_restrict)
             reconstruct_func = reconstruct_from_MMS_Slepians
         elif(angular_basis == 'SphericalHarmonics'):
             reconstruct_func = reconstruct_from_MMS_SphericalHarmonics
@@ -233,10 +235,6 @@ if __name__=='__main__':
         elif(angular_basis == 'SphericalHarmonics'):
             reconstruct_func = reconstruct_from_SolO_SphericalHarmonics
     
-
-    # if(angular_basis == 'SphericalHarmonics'):
-    #     SH_basis = misc_funcs.gen_SH_scipy(rec_dict, 0)        
-
     # loading the B-slopes
     bslopes = np.load('./input_data_files/slopes.npy')
     bvars = np.load('./input_data_files/vars.npy')
@@ -247,8 +245,6 @@ if __name__=='__main__':
 
     data_moments = {}
     rec_moments = {}
-
-    # sys.exit()
 
     if(datascan_mode):
         for time_idx in tqdm(range(len(times))):
@@ -347,13 +343,16 @@ if __name__=='__main__':
 
     else:
         # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(36,37)): #, 667)):
+        for time_idx in tqdm(range(1)): # 533
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
-            StepII_bundle = reconstruct_func(time_idx)
-            # lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
+            # StepII_bundle = reconstruct_func(time_idx)
+            lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
             
             # # calculating the moments for comparison
-            data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS_SH(time_idx, mask_noisy=False)
+            if angular_basis == 'Slepians':
+                data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS(time_idx, mask_noisy=False)
+            else:
+                data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS_SH(time_idx, mask_noisy=False)
             continue
             # # plotting the uninterpolated VDF
             # plot_VDF.plot_VDF(StepII_bundle, time_idx)

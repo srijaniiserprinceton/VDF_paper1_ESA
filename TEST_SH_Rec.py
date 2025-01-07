@@ -1,6 +1,7 @@
 # import statements
 import os
 import cdflib, sys, pickle
+import cdflib.xarray
 import numpy as np
 import spherepy as sp
 from tqdm import tqdm
@@ -273,7 +274,7 @@ if __name__ == "__main__":
     Espline_order = 3
 
     filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
-    data = cdflib.cdf_to_xarray(filename, to_datetime=True)
+    data = cdflib.xarray.cdf_to_xarray(filename, to_datetime=True)
 
     # calculating time in units of milliseconds
     times_datetime = func(data.unix_time.values)
@@ -420,48 +421,48 @@ if __name__ == "__main__":
             rho_look += rho
             rec_rho_look += rec_rho
 
-        data_mom[time_idx], rec_mom[time_idx] = log_calc_moments_MMS_SH(time_idx)
+        data_mom[time_idx], rec_mom[time_idx] = calc_moments_MMS_SH(time_idx)
         # print("HERE 2:", rho_look, rec_rho_look)
         # print(data_mom[0], rec_mom[0])
         # sys.exit()
-        Nrows, Ncols = 4, 8
-        fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
+        # Nrows, Ncols = 4, 8
+        # fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True)
 
-        for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
-            # finding the row and the column of the subplots
-            row, col = i//Ncols, i%Ncols
+        # for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
+        #     # finding the row and the column of the subplots
+        #     row, col = i//Ncols, i%Ncols
 
-            E = rec_dict.ENERGY[time_idx, E_idx, 0, 0]
+        #     E = rec_dict.ENERGY[time_idx, E_idx, 0, 0]
             
-            # note that for FPI, theta array stays the same at different times but phi array changes
-            tt_orig, pp_orig, vv = rec_dict.ESA_THETA[time_idx, E_idx, :, :],\
-                                rec_dict.ESA_PHI[time_idx, E_idx, :, :],\
-                                rec_dict.VDF[time_idx, E_idx, :, :]
+        #     # note that for FPI, theta array stays the same at different times but phi array changes
+        #     tt_orig, pp_orig, vv = rec_dict.ESA_THETA[time_idx, E_idx, :, :],\
+        #                         rec_dict.ESA_PHI[time_idx, E_idx, :, :],\
+        #                         rec_dict.VDF[time_idx, E_idx, :, :]
 
-            if LOG:
-                ax[row, col].pcolormesh(pp_orig, tt_orig, np.roll(np.log10(vv), 16, axis=0), vmin=1, vmax=8, cmap='inferno')
-            else:
-                ax[row, col].pcolormesh(pp_orig, tt_orig, np.roll((vv), 16, axis=0), cmap='inferno', norm=LogNorm(vmin=1e1, vmax=1e7))
-            ax[row, col].set_aspect('equal')
+        #     if LOG:
+        #         ax[row, col].pcolormesh(pp_orig, tt_orig, np.roll(np.log10(vv), 16, axis=0), vmin=1, vmax=8, cmap='inferno')
+        #     else:
+        #         ax[row, col].pcolormesh(pp_orig, tt_orig, np.roll((vv), 16, axis=0), cmap='inferno', norm=LogNorm(vmin=1e1, vmax=1e7))
+        #     ax[row, col].set_aspect('equal')
 
-        fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True, layout='constrained')
+        # fig, ax = plt.subplots(Nrows, Ncols, figsize=(16,8), sharex=True, sharey=True, layout='constrained')
 
-        for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
-            # finding the row and the column of the subplots
-            row, col = i//Ncols, i%Ncols
+        # for i, E_idx in enumerate(np.arange(0, Nrows * Ncols)):
+        #     # finding the row and the column of the subplots
+        #     row, col = i//Ncols, i%Ncols
 
-            E = rec_dict.ENERGY[time_idx, E_idx, 0, 0]
+        #     E = rec_dict.ENERGY[time_idx, E_idx, 0, 0]
             
-            # note that for FPI, theta array stays the same at different times but phi array changes
-            tt_orig, pp_orig, vv = rec_dict.ESA_THETA[time_idx, E_idx, :, :],\
-                                rec_dict.ESA_PHI[time_idx, E_idx, :, :],\
-                                rec_dict.VDF[time_idx, E_idx, :, :]
+        #     # note that for FPI, theta array stays the same at different times but phi array changes
+        #     tt_orig, pp_orig, vv = rec_dict.ESA_THETA[time_idx, E_idx, :, :],\
+        #                         rec_dict.ESA_PHI[time_idx, E_idx, :, :],\
+        #                         rec_dict.VDF[time_idx, E_idx, :, :]
 
-            if LOG:
-                ax[row, col].pcolormesh(pp_orig, tt_orig, np.roll((rec_final[time_idx, i]), 16, axis=0), vmin=1, vmax=8, cmap='inferno')
-            else:
-                ax[row, col].pcolormesh(pp_orig, tt_orig, np.roll((rec_final[time_idx, i]), 16, axis=0), norm=LogNorm(vmin=1e1, vmax=1e7), cmap='inferno')
-            ax[row, col].set_title(f'{E}')
-            ax[row, col].set_aspect('equal')
+        #     if LOG:
+        #         ax[row, col].pcolormesh(pp_orig, tt_orig, np.roll((rec_final[time_idx, i]), 16, axis=0), vmin=1, vmax=8, cmap='inferno')
+        #     else:
+        #         ax[row, col].pcolormesh(pp_orig, tt_orig, np.roll((rec_final[time_idx, i]), 16, axis=0), norm=LogNorm(vmin=1e1, vmax=1e7), cmap='inferno')
+        #     ax[row, col].set_title(f'{E}')
+        #     ax[row, col].set_aspect('equal')
 
     # plt.suptitle('With Scipy', fontsize=20)

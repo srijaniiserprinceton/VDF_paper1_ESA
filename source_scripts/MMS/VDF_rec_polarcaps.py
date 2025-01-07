@@ -21,7 +21,7 @@ class VDF_rec_polarcaps_Slepians:
         self.S = None
 
         # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
-        # self.VDF[np.isnan(self.VDF)] = 1e0
+        self.VDF[np.isnan(self.VDF)] = 1e0
 
         # gyrotropized 2D VDF on a plane
         self.fine_from_fine = np.zeros((self.NENERGY, self.NTHETA_SLEP, self.NPHI_SLEP))
@@ -61,31 +61,31 @@ class VDF_rec_polarcaps_Slepians:
             plt.close()
 
 
-    def gen_Slepians_on_polarcap(self, L, zonal_only=True):
-        '''
-        # generating the low resolution Slepians (NOT USED IN CURRENT IMPLEMENTATION)
-        [G_lr, V_lr, lon_lr, lat_lr] = eng.glmalphapto('VDF_polarcap', self.Lmax, self.instrument, nargout=4)
-        self.G_lr = np.asarray(G_lr)
-        self.V_lr = np.asarray(V_lr)
-        self.lon_lr = np.asarray(lon_lr)
-        self.lat_lr = np.asarray(lat_lr)
-        '''
+    # def gen_Slepians_on_polarcap(self, L, zonal_only=True):
+    #     '''
+    #     # generating the low resolution Slepians (NOT USED IN CURRENT IMPLEMENTATION)
+    #     [G_lr, V_lr, lon_lr, lat_lr] = eng.glmalphapto('VDF_polarcap', self.Lmax, self.instrument, nargout=4)
+    #     self.G_lr = np.asarray(G_lr)
+    #     self.V_lr = np.asarray(V_lr)
+    #     self.lon_lr = np.asarray(lon_lr)
+    #     self.lat_lr = np.asarray(lat_lr)
+    #     '''
 
-        # generating the high resolution Slepians (USED IN CURRENT IMPLEMENTATION)
-        # [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap', self.Lmax, 'HIGHRES', nargout=4)
-        [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap_MMS', L, 'HIGHRES', nargout=4)
-        self.G_hr = np.asarray(G_hr)
-        self.V_hr = np.asarray(V_hr).squeeze()
-        self.lon_hr = np.asarray(lon_hr)
-        self.lat_hr = np.asarray(lat_hr)
+    #     # generating the high resolution Slepians (USED IN CURRENT IMPLEMENTATION)
+    #     # [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap', self.Lmax, 'HIGHRES', nargout=4)
+    #     [G_hr, V_hr, lon_hr, lat_hr] = eng.glmalphapto('VDF_polarcap_MMS', L, 'HIGHRES', nargout=4)
+    #     self.G_hr = np.asarray(G_hr)
+    #     self.V_hr = np.asarray(V_hr).squeeze()
+    #     self.lon_hr = np.asarray(lon_hr)
+    #     self.lat_hr = np.asarray(lat_hr)
 
         
-        '''
-        # keeping only until the Shannon number
-        N2D = np.argmin(np.abs(self.V_hr - 0.5))
-        self.G_hr = self.G_hr[:N2D]
-        self.V_hr = self.V_hr[:N2D]
-        '''
+    #     '''
+    #     # keeping only until the Shannon number
+    #     N2D = np.argmin(np.abs(self.V_hr - 0.5))
+    #     self.G_hr = self.G_hr[:N2D]
+    #     self.V_hr = self.V_hr[:N2D]
+    #     '''
 
 
     def recon_3D_VDF_MMS(self):
@@ -97,10 +97,12 @@ class VDF_rec_polarcaps_Slepians:
             logvv = np.nan_to_num(logvv, posinf=np.nan, neginf=np.nan)
 
             # interpolating the data to Slepian grid before fitting polar Slepians (minor adjustments)
-            orig_phi_grid = self.ESA_PHI[self.time_idx, E_idx] - self.ESA_PHI[self.time_idx, E_idx, 0, 0]
-            orig_theta_grid = self.ESA_THETA[self.time_idx, E_idx]
-            img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),
-                              (self.SLEP_PHI, self.SLEP_THETA+90), method='linear')
+            # orig_phi_grid = self.ESA_PHI[self.time_idx, E_idx] - self.ESA_PHI[self.time_idx, E_idx, 0, 0]
+            # orig_theta_grid = self.ESA_THETA[self.time_idx, E_idx]
+            # img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),
+            #                   (self.SLEP_PHI, self.SLEP_THETA+90), method='linear')     # Possibly -90 not +90
+
+            img_hr = np.flip(logvv.T, axis=0)
 
             # fitting the polar Slepians
             nan_mask_hr = np.isnan(img_hr)
@@ -120,7 +122,7 @@ class VDF_rec_polarcaps_Slepians:
         self.fine_from_fine = self.fine_from_fine[:,::-1,:]
 
     def plot_polar_rec_VDF(self, E_idx, ax, fine_from_finecoefs, xcirc, ycirc):
-        vmin, vmax = 1, 7
+        vmin, vmax = 1, 5
         E = self.ENERGY[self.time_idx, E_idx, 0, 0]
         ax.pcolormesh(self.SLEP_PHI, self.SLEP_THETA, fine_from_finecoefs,
                       cmap='inferno', vmin=vmin, vmax=vmax, rasterized=True)
@@ -150,6 +152,8 @@ class VDF_rec_polarcaps_SphericalHarmonics:
         self.fine_from_fine = np.zeros((self.NENERGY, self.NPHI_ESA, self.NTHETA_ESA))
 
         self.SLEP_coeffs = np.zeros((self.NENERGY, (self.Lmax+1)**2), dtype='complex128')
+        self.angular_extent_mask()
+
         self.recon_3D_VDF_MMS()
 
         # the final total fitted plot
@@ -174,6 +178,46 @@ class VDF_rec_polarcaps_SphericalHarmonics:
             plt.savefig(f'VDF_paper1_plots/VDF_rec_polar_plot_MMS/{time_idx}.png')
             plt.close()
 
+    def angular_extent_mask(self):
+        # This function will apply a tanh filter at a set angular extent about the phi centroid identified in locate axis.
+        # Take in the defined angular extent
+        angular_extent = self.TH
+
+        # Get the phi centroid
+        phi_idx = self.PHI_CEN_IDX
+        theta_idx = self.THETA_CEN_IDX
+
+        theta_center = self.ESA_THETA[self.time_idx, 0, 0, theta_idx]
+        phi_center = self.ESA_PHI[self.time_idx, 0, phi_idx, 0]
+
+        # Now get the theta and phi for the given array
+        Theta = self.ESA_THETA[self.time_idx, 0]        # 32 x 16 array
+        Phi = self.ESA_PHI[self.time_idx, 0]            # 32 x 16 array
+
+        # Define the OMEGA
+        Omega = np.sqrt((Phi - phi_center)**2 + (Theta - theta_center)**2)
+
+        # Get the unique values
+        unique_omega = np.unique(Omega)
+
+        filter = np.ones(len(unique_omega))
+        filter[unique_omega > angular_extent] = np.tanh(np.radians(90 - unique_omega[unique_omega > angular_extent]))
+        filter[filter < 0] = 0      # Kill off all power after this point.
+
+
+        VDF_MASK = np.zeros_like(self.VDF[self.time_idx])
+        for E_idx in range(self.NENERGY):
+            VDF = self.VDF[self.time_idx, E_idx, :, :].copy()
+
+            for i in range(len(unique_omega)):
+                VDF[Omega == unique_omega[i]] = VDF[Omega == unique_omega[i]] * filter[i]
+
+            VDF_MASK[E_idx] = VDF
+
+        self.VDF_MASKED = VDF_MASK
+
+        return(0)
+
     def recon_3D_VDF_MMS(self):
         # looping over energy shells -> fitting Spherical Harmonics
         for E_idx in range(self.NENERGY):
@@ -183,6 +227,11 @@ class VDF_rec_polarcaps_SphericalHarmonics:
             data = np.nan_to_num(data, posinf=np.nan, neginf=np.nan)
             
             img_hr = data * 1.0
+            # interpolating the data to Slepian grid before fitting polar Slepians (minor adjustments)
+            # orig_phi_grid = self.ESA_PHI[self.time_idx, E_idx] - self.ESA_PHI[self.time_idx, E_idx, 0, 0]
+            # orig_theta_grid = self.ESA_THETA[self.time_idx, E_idx]
+            # img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), data.flatten(),
+            #                   (self.SLEP_PP, self.SLEP_TT+90), method='linear').T  
             
             # fitting the Spherical Harmonics
             nan_mask = np.isnan(img_hr)

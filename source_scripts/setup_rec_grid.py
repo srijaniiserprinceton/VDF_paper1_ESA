@@ -45,8 +45,9 @@ class PSP:
 
 
 class MMS:
-    def __init__(self, data_ESA, TH, Lmax=None, Nmesh=(100, 201, 101), Espline_order=3, PHI_CEN_IDX=16, THETA_CEN_IDX=0, makeplot=True):
+    def __init__(self, data_ESA, TH, Lmax=None, Nmesh=(100, 201, 101), Espline_order=3, PHI_CEN_IDX=16, THETA_CEN_IDX=0, angular_basis='Slepian', makeplot=True):
         self.instrument = 'MMS'
+        self.angular_basis = angular_basis
 
         NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
         VDF = np.zeros((NTIME, NENERGY, NPHI, NTHETA))

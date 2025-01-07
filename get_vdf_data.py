@@ -404,8 +404,8 @@ if __name__ == "__main__":
     # trange = [tstart, tend]
     # trange = ['2020-07-14/10:00:00', '2020-07-14/15:00:00']
     # trange = ['2020-08-02/09:00:00', '2020-08-02/15:20:00']
-    trange = ['2020-07-16/18:15:00', '2020-07-16/18:45:00']
-
+    # trange = ['2020-07-16/18:15:00', '2020-07-16/18:45:00']
+    trange = ['2020-07-17/03:15:00', '2020-07-17/03:45:00']
 
     # saving the .cdf file with the formatted VDF from desired time interval
-    save_vdf_data(trange, spacecraft='SO', PROBE='1', SUPPORT=True, CLIP=True)
+    # save_vdf_data(trange, spacecraft='SO', PROBE='1', SUPPORT=True, CLIP=True)

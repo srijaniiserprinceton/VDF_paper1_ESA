@@ -7,9 +7,9 @@ plt.ion()
 
 import matlab.engine as matlab
 # generating the low and high resolution Slepians-on-polar-cap
-eng = matlab.start_matlab()
-s = eng.genpath('/Users/srijanbharatidas/Documents/Research/Codes/Helioseismology/Slepians/Slepian_Git')
-eng.addpath(s, nargout=0)
+# eng = matlab.start_matlab()
+# s = eng.genpath('/Users/srijanbharatidas/Documents/Research/Codes/Helioseismology/Slepians/Slepian_Git')
+# eng.addpath(s, nargout=0)
 
 import generate_2D_contour as gen_contour
 

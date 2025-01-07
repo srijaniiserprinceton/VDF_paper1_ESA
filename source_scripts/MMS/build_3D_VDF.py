@@ -30,8 +30,10 @@ def get_3D_VDF(vdf_rec_dict):
         # B-spline interpolation
         SLEP_coeffs_interp[:, Slep_idx] = spline(lnE_mesh)
         
-        G_interp[Slep_idx] = interpolate.griddata(points, vdf_rec_dict.G[:,:,Slep_idx].flatten(), (pp, tt))
-
+        if vdf_rec_dict.angular_basis == 'Slepians':
+            G_interp[Slep_idx] = interpolate.griddata(points, vdf_rec_dict.G[Slep_idx].flatten(), (pp, tt))
+        else:
+            G_interp[Slep_idx] = interpolate.griddata(points, vdf_rec_dict.G[:,:,Slep_idx].flatten(), (pp, tt))
     # inner product with Slepian function basis to make full 3D structure
     # VDF_3D_polar = coeffs_hr_interp @ np.moveaxis(vdf_rec_dict.G, 0, 1)
     VDF_3D_polar = SLEP_coeffs_interp @ np.moveaxis(G_interp, 0, 1)
