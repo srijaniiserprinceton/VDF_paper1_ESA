@@ -155,7 +155,12 @@ def without_plot(rec_dict, time_idx, Nrows, Ncols):
 
         # finding the centroid (in linear scale)
         # xcen, ycen = com(np.nan_to_num(vv))
-        H, xcen, ycen, sigxy = fit_gauss.fitgaussian(logvv)
+
+        # if there are some non-zero values in the shell
+        if(np.nansum(np.log10(rec_dict.VDF[time_idx, E_idx])) > 0):
+            H, xcen, ycen, sigxy = fit_gauss.fitgaussian(logvv)
+        else:
+            continue
 
         # bad 2D gaussian fits are discarded 
         if(xcen > rec_dict.NPHI_ESA or ycen > rec_dict.NTHETA_ESA): continue

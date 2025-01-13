@@ -68,13 +68,14 @@ def reconstruct_from_SolO_Slepians(time_idx):
     locate_axis.find_gyroaxis(rec_dict, time_idx, Nrows=4, Ncols=8)
 
     if(angular_basis == 'Slepians'):
-        # saving these files as MATLAB readable arrays for generating Slepian functions
-        mdict = {'phi0': rec_dict.mu_phi[time_idx], 'theta0': rec_dict.mu_theta[time_idx]+90, 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
-                'theta_grid': rec_dict.SLEP_TT.flatten(), 'Nphi': rec_dict.NPHI_SLEP, 'Ntheta': rec_dict.NTHETA_SLEP}
-        savemat(f'./input_data_files/Slepian_functions/slepgen_grid_{instrument}_HIGHRES.mat', mdict)
+        if(not genSlep_once):
+            # saving these files as MATLAB readable arrays for generating Slepian functions
+            mdict = {'phi0': rec_dict.mu_phi[time_idx], 'theta0': rec_dict.mu_theta[time_idx]+90, 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
+                    'theta_grid': rec_dict.SLEP_TT.flatten(), 'Nphi': rec_dict.NPHI_SLEP, 'Ntheta': rec_dict.NTHETA_SLEP}
+            savemat(f'./input_data_files/Slepian_functions/slepgen_grid_{instrument}_HIGHRES.mat', mdict)
 
-        # generating the Slepian basis functions
-        misc_funcs.gen_SLEP(rec_dict, N2D_restrict=N2D_restrict)
+            # generating the Slepian basis functions
+            misc_funcs.gen_SLEP(rec_dict, N2D_restrict=N2D_restrict)
     
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
     StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, rcond=rcond_polcap,
@@ -178,8 +179,8 @@ def write_pickle(x, fname):
 if __name__=='__main__':
     instrument = 'SolO'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'      # 'Slepians' or 'SphericalHarmonics'
-    makeplot = True                # whether we want to save the diagnostic plots
-    TH = 35                         # the angular radius of the polar cap [in degrees]
+    makeplot = False                # whether we want to save the diagnostic plots
+    TH = 45                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
     Lmax = 28 #14                       # maximum angular degree for polar Slepian generation
@@ -188,8 +189,9 @@ if __name__=='__main__':
     rcond_polcap = 1e-6                # Condition number for the inversion in polar caps
     rcond_cart = 1e-4               # Condition number for the inversion on a 2D plane
     ignore_last_anode = False       # if we want to set the last anode counts to nan
-    N2D_restrict = False             # if we want to truncate the basis functions to Shannon number
+    N2D_restrict = True             # if we want to truncate the basis functions to Shannon number
     datascan_mode = False           # if we want to scan over the time interval to find the centroid
+    genSlep_once = True             # if we want to run for a large number of times and generate Slepians once
 
     NEmesh, NPmesh, NTmesh = 200, 201, 101    # High resolution grid for final interpolation.
     Espline_order = 3                         # Spline order for final interpolation in energy.
@@ -215,12 +217,13 @@ if __name__=='__main__':
     elif(instrument=='MMS'): 
         rec_dict = setup_rec_grid.MMS(data, TH, Lmax=Lmax, Nmesh=(NEmesh, NPmesh, NTmesh), Espline_order=Espline_order, angular_basis=angular_basis, makeplot=makeplot)
         if(angular_basis == 'Slepians'):
+            # saving these files as MATLAB readable arrays for generating Slepian functions
             mdict = {'phi0': 180, 'theta0': 90, 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
             'theta_grid': rec_dict.SLEP_TT.flatten(), 'Nphi': rec_dict.NPHI_SLEP, 'Ntheta': rec_dict.NTHETA_SLEP}
             savemat(f'./input_data_files/Slepian_functions/slepgen_grid_{instrument}_HIGHRES.mat', mdict)
-
             # generating the Slepian basis functions
             misc_funcs.gen_SLEP(rec_dict, N2D_restrict=N2D_restrict)
+
             reconstruct_func = reconstruct_from_MMS_Slepians
         elif(angular_basis == 'SphericalHarmonics'):
             reconstruct_func = reconstruct_from_MMS_SphericalHarmonics
@@ -229,6 +232,14 @@ if __name__=='__main__':
     elif(instrument=='SolO'): 
         rec_dict = setup_rec_grid.SolO(data, TH, Lmax=Lmax, Nmesh=(NEmesh, NPmesh, NTmesh), Espline_order=Espline_order, makeplot=makeplot)
         if(angular_basis == 'Slepians'):
+            if(genSlep_once):
+                # saving these files as MATLAB readable arrays for generating Slepian functions
+                mdict = {'phi0': 180, 'theta0': 90, 'cap_extent': rec_dict.TH, 'phi_grid': rec_dict.SLEP_PP.flatten(),
+                        'theta_grid': rec_dict.SLEP_TT.flatten(), 'Nphi': rec_dict.NPHI_SLEP, 'Ntheta': rec_dict.NTHETA_SLEP}
+                savemat(f'./input_data_files/Slepian_functions/slepgen_grid_{instrument}_HIGHRES.mat', mdict)
+                # generating the Slepian basis functions
+                misc_funcs.gen_SLEP(rec_dict, N2D_restrict=N2D_restrict)
+
             reconstruct_func = reconstruct_from_SolO_Slepians
         elif(angular_basis == 'SphericalHarmonics'):
             reconstruct_func = reconstruct_from_SolO_SphericalHarmonics
@@ -341,11 +352,11 @@ if __name__=='__main__':
 
     else:
         # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(1,2)): # 533
+        for time_idx in tqdm(range(1,10)): # 533
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
             lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
-            
+            continue
             # # calculating the moments for comparison
             if angular_basis == 'Slepians':
                 data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS(time_idx, mask_noisy=False)
