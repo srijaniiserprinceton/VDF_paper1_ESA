@@ -1,0 +1,16 @@
+In './MMS/build_3D_VDF.py':
+    MT added a self.angular basis to setup_rec_grid so that G_interp can be calculated for both the Slepian and Spherical Harmonic codes.
+    before: G_interp[Slep_idx] = interpolate.griddata(points, vdf_rec_dict.G[:,:,Slep_idx].flatten(), (pp, tt))
+    after: G_interp[Slep_idx] = interpolate.griddata(points, vdf_rec_dict.G[Slep_idx].flatten(), (pp, tt))
+
+
+
+In 'reconstruct_VDF.py':
+    I changed the code such that the Slepian coefficients were generated only at one time. In the previous implementation, at each time_idx
+    the code was generating the Slepian basis functions on the same angular extent. Perhaps this is the correct implementation, however, this 
+    resulted in a run time of roughly 4 hrs and 30 mins approximately.
+
+In 'source_scripts/setup_rec_grid.py':
+    I added to the MMS class the angular basis keyword. We now pass the angular basis ensuring that the choice of Spherical Harmonics or Slepians 
+    is included. This will be used in multiple places throughout the code.
+
