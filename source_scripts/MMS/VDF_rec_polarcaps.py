@@ -96,7 +96,7 @@ class VDF_rec_polarcaps_Slepians:
             logvv = np.log10(vv)
             logvv = np.nan_to_num(logvv, posinf=np.nan, neginf=np.nan)
 
-            # interpolating the data to Slepian grid before fitting polar Slepians (minor adjustments)
+            # # interpolating the data to Slepian grid before fitting polar Slepians (minor adjustments)
             # orig_phi_grid = self.ESA_PHI[self.time_idx, E_idx] - self.ESA_PHI[self.time_idx, E_idx, 0, 0]
             # orig_theta_grid = self.ESA_THETA[self.time_idx, E_idx]
             # img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),

@@ -146,14 +146,22 @@ class SolO:
         THETA[:,:,:NPHI,:] = data_ESA.theta.data
         PHI[:,:,:NPHI,:] = data_ESA.phi.data
 
+        '''
         # we want to scale VDF such that the lowest non-zero entry is 1.0
         VDF[VDF == 0] = np.nan
         self.VDF_minval_true = np.nanmin(VDF)
         VDF = VDF / self.VDF_minval_true
+        '''
 
-        # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
-        self.nanval = np.nan #1e-5
-        VDF[np.isnan(VDF)] = self.nanval
+        # we want to scale VDF such that the lowest non-zero entry is 1.0
+        VDF[VDF == 0] = np.nan
+        self.VDF_minval_true = np.nanmin(VDF, axis=(2,3))
+        self.VDF_minval_true[np.isnan(self.VDF_minval_true)] = 0.0
+        VDF = VDF / self.VDF_minval_true[:, :, None, None]
+
+        # # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
+        # self.nanval = np.nan #1e-5
+        # VDF[np.isnan(VDF)] = self.nanval
 
         self.VDF = VDF * 1.0
         self.ENERGY = ENERGY * 1.0
@@ -181,13 +189,11 @@ class SolO:
         self.slep_dir = misc_functions.read_config()[0]
 
         # Check Lmax
-        dtheta_Nyq = np.max(np.diff(self.ESA_THETA[:,0,0,:]))
-        dphi_Nyq = np.max(np.diff(self.ESA_PHI[:,0,:,0]))
-        self.Lmax_Nyq = int(np.min([np.ceil(180/dtheta_Nyq), np.ceil(180/dphi_Nyq)]))
+        self.Lmax_Nyq = min(int(self.NTHETA_SLEP - 2), int((self.NPHI_SLEP - 2)/ 2))
         if Lmax is None: 
             self.Lmax = self.Lmax_Nyq
         else:
-            if Lmax > self.Lmax_Nyq: print(f"Lmax exceeds Nyquist. Resetting to Lmax_Nyquist = {self.Lmax_Nyq}.")
+            if Lmax > self.Lmax_Nyq: print("Lmax exceeds Nyquist. Resetting to Nyquist.")
             self.Lmax = min(Lmax, self.Lmax_Nyq)
 
         # to store the gyro center in phi and theta
@@ -215,6 +221,6 @@ class SolO:
 
         # finding the vmin and vmax according to the time 
         self.vmax_t = np.nanmax(np.log10(self.VDF), axis=(1,2,3)).astype('int')
-        self.vmax_t = np.nan_to_num(self.vmax_t, nan = 1.1, posinf=1.0, neginf=1.0)
+        # self.vmax_t = np.nan_to_num(self.vmax_t, nan = 1.1, posinf=1.0, neginf=1.0)
         self.vmin_t = np.ones_like(self.vmax_t)
 

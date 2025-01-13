@@ -76,8 +76,6 @@ def reconstruct_from_SolO_Slepians(time_idx):
         # generating the Slepian basis functions
         misc_funcs.gen_SLEP(rec_dict, N2D_restrict=N2D_restrict)
     
-    sys.exit()
-    
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
     StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, rcond=rcond_polcap,
                                                                  Nrows=4, Ncols=8)
@@ -178,13 +176,13 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'MMS'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
+    instrument = 'SolO'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'      # 'Slepians' or 'SphericalHarmonics'
     makeplot = True                # whether we want to save the diagnostic plots
-    TH = 85                         # the angular radius of the polar cap [in degrees]
+    TH = 35                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
-    Lmax = 14                       # maximum angular degree for polar Slepian generation
+    Lmax = 28 #14                       # maximum angular degree for polar Slepian generation
     Ncart = 50                      # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250                # Minimum reliable energy shell [in km/s]
     rcond_polcap = 1e-6                # Condition number for the inversion in polar caps
@@ -198,8 +196,8 @@ if __name__=='__main__':
 
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
-    filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
-    # filename='input_data_files/SO_2020-07-16_VDF.cdf'       # Change the naming convention so that is it SolO...
+    # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
+    filename='input_data_files/SO_2020-07-16_VDF.cdf'       # Change the naming convention so that is it SolO...
     # filename='input_data_files/SO_Test.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
@@ -343,7 +341,7 @@ if __name__=='__main__':
 
     else:
         # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(533,534)): # 533
+        for time_idx in tqdm(range(1,2)): # 533
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
             lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)

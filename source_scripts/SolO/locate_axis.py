@@ -111,6 +111,7 @@ def with_plot(rec_dict, time_idx, Nrows, Ncols):
 
         #------------------MAKING DIAGNOSTIC PLOTS IF REQUIRED-----------------------#
         vmin, vmax = rec_dict.vmin_t[time_idx], rec_dict.vmax_t[time_idx]
+        vmin, vmax = 0, 3
         plot_diagnostic_panels(ax[row,col], E, pp_orig, tt_orig, logvv, vmin, vmax)
 
         # appending the located centers

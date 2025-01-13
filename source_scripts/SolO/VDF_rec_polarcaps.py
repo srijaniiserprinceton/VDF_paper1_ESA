@@ -20,6 +20,9 @@ class VDF_rec_polarcaps_Slepians:
         self.rcond = rcond
         self.S = None
 
+        # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
+        self.VDF[np.isnan(self.VDF)] = 1e0
+
         # gyrotropized 2D VDF on a plane
         self.fine_from_fine = np.zeros((self.NENERGY, self.NTHETA_SLEP, self.NPHI_SLEP))
 
@@ -61,15 +64,17 @@ class VDF_rec_polarcaps_Slepians:
             vv = self.VDF[self.time_idx, E_idx, :, :] 
             logvv = np.log10(vv)
             logvv = np.nan_to_num(logvv, posinf=np.nan, neginf=np.nan)
-            # interpolating the data to Slepian grid before fitting polar Slepians (minor adjustments)
-            orig_phi_grid = self.ESA_PHI[self.time_idx, E_idx]
-            orig_theta_grid = self.ESA_THETA[self.time_idx, E_idx]
 
-            # img_hr = np.zeros_like(self.SLEP_PHI)
-            # img_hr[15:24,26:37] = logvv.T
+            img_hr = np.zeros_like(self.SLEP_PHI)
+            img_hr[15:24,26:37] = logvv.T
 
-            img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),
-                              (self.SLEP_PHI, self.SLEP_THETA+90), method='linear', fill_value=0.0)
+            # # interpolating the data to Slepian grid before fitting polar Slepians (minor adjustments)
+            # orig_phi_grid = self.ESA_PHI[self.time_idx, E_idx]
+            # orig_theta_grid = self.ESA_THETA[self.time_idx, E_idx]
+            # img_hr = griddata((orig_phi_grid.flatten(), orig_theta_grid.flatten()), logvv.flatten(),
+            #                   (self.SLEP_PHI, self.SLEP_THETA+90), method='linear', fill_value=0.0)
+
+            # img_hr = np.flip(logvv.T, axis=0)
 
             # fitting the polar Slepians
             nan_mask_hr = np.isnan(img_hr)
@@ -89,6 +94,7 @@ class VDF_rec_polarcaps_Slepians:
 
     def plot_polar_rec_VDF(self, E_idx, ax, fine_from_finecoefs, xcirc, ycirc):
         vmin, vmax = self.vmin_t[self.time_idx], self.vmax_t[self.time_idx]
+        vmin, vmax = 0, 3
         E = self.ENERGY[self.time_idx, E_idx, 0, 0]
         ax.pcolormesh(self.SLEP_PHI, self.SLEP_THETA, fine_from_finecoefs,
                       cmap='inferno', vmin=vmin, vmax=vmax, rasterized=True)
