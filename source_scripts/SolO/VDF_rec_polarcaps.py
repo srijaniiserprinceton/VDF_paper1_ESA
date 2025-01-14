@@ -38,7 +38,8 @@ class VDF_rec_polarcaps_Slepians:
             xcirc, ycirc = self.TH * np.cos(theta_circ) + self.mu_phi[time_idx], self.TH * np.sin(theta_circ) + self.mu_theta[time_idx]
 
             fig, ax = plt.subplots(4, 8, figsize=(16,8), sharex=True, sharey=True)
-            for i, E_idx in enumerate(range(40, 40 + (Nrows * Ncols))):
+            # for i, E_idx in enumerate(range(40, 40 + (Nrows * Ncols))):
+            for i, E_idx in enumerate(range(rec_dict.E_minidx, rec_dict.E_maxidx)):
                 self.plot_polar_rec_VDF(E_idx, ax[i//8, i%8], self.fine_from_fine[E_idx], xcirc, ycirc)
 
             plt.subplots_adjust(top=0.96, bottom=0.05, left=0.03, right=0.99, wspace=0.05, hspace=0.05)

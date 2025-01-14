@@ -148,6 +148,34 @@ def calc_moments_MMS(time_idx, mask_noisy=False):
 
     return DATA_moments, REC_moments
 
+def calc_moments_SolO(time_idx):
+    REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * 1e12 * rec_dict.VDF_minval_true[time_idx, :, None, None]
+    
+    # tiling the raw data VDF
+    DATA_VDF = np.ones_like(REC_VDF)
+    DATA_VDF[:,15:24,26:37] = np.transpose(StepII_bundle.VDF[time_idx] * 1.0, [0, 2, 1])
+    DATA_VDF = DATA_VDF * 1e12 * rec_dict.VDF_minval_true[time_idx,:, None, None]
+
+    # tiling the DATA_VDF in the larger grid of the REC_VDF
+    DATA_VDF = np.flip(DATA_VDF, axis=1)
+
+    velocity = 13.85 * np.sqrt(StepII_bundle.ENERGY[time_idx, :, 0, 0]) * 1000
+
+    DATA_theta, DATA_phi = StepII_bundle.ESA_THETA[time_idx,0,0,:], StepII_bundle.ESA_PHI[time_idx,0,:,0]
+    REC_theta, REC_phi = 90-StepII_bundle.SLEP_THETA[:,0], StepII_bundle.SLEP_PHI[0,:]
+
+    # adjsuting the data phi to go from 0->360
+    # DATA_phi = DATA_phi - DATA_phi[0]
+    #DATA_theta = DATA_theta - DATA_theta[0]
+
+    # in SI units
+    # DATA_moments = calc_moments_delta(DATA_VDF, velocity, np.radians(DATA_theta), np.radians(DATA_phi))
+    # REC_moments = calc_moments_delta(REC_VDF, velocity, np.radians(DATA_theta), np.radians(DATA_phi))
+    DATA_moments = calc_moments_delta(DATA_VDF, velocity, np.radians(REC_theta), np.radians(REC_phi))
+    REC_moments = calc_moments_delta(REC_VDF, velocity, np.radians(REC_theta), np.radians(REC_phi))
+
+    return DATA_moments, REC_moments
+
 def calc_moments_MMS_SH(time_idx, mask_noisy=False):
     DATA_VDF = np.transpose(StepII_bundle.VDF[time_idx] * 1e12 * rec_dict.VDF_minval_true[time_idx,:, None, None], [0, 2, 1])
     REC_VDF = np.transpose(np.power(10, StepII_bundle.fine_from_fine) * 1e12 * rec_dict.VDF_minval_true[time_idx,:, None, None], [0, 2, 1])
@@ -351,18 +379,21 @@ if __name__=='__main__':
         plt.savefig('VDF_paper1_plots/final_plots/capfit3.pdf')
 
     else:
-        # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(1,10)): # 533
+        for time_idx in tqdm(range(len(times))):
+        # for time_idx in tqdm(range(0,11)): # 533
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
             lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
-            continue
+            
             # # calculating the moments for comparison
             if angular_basis == 'Slepians':
-                data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS(time_idx, mask_noisy=False)
+                if(instrument == 'MMS'):
+                    data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS(time_idx, mask_noisy=False)
+                if(instrument == 'SolO'):
+                    data_moments[time_idx], rec_moments[time_idx] = calc_moments_SolO(time_idx)
             else:
                 data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS_SH(time_idx, mask_noisy=False)
-            # continue
+            continue
             # # plotting the uninterpolated VDF
             # plot_VDF.plot_VDF(StepII_bundle, time_idx)
             # continue
