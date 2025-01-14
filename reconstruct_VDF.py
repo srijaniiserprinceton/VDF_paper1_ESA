@@ -19,7 +19,7 @@ func = np.vectorize(datetime.utcfromtimestamp)
 from source_scripts import import_script, setup_rec_grid
 from source_scripts import misc_functions as misc_funcs
 import plot_3D_VDF
-from calculations.calc_moments import calc_moments, spher_moments, calc_moments_delta
+from calculations.calc_moments import calc_moments, spher_moments, calc_moments_delta, calc_moments_delta_SolO
 from source_scripts import fit_2D_gaussian as fit_gauss
 
 def reconstruct_from_PSP(time_idx):
@@ -171,8 +171,8 @@ def calc_moments_SolO(time_idx):
     # in SI units
     # DATA_moments = calc_moments_delta(DATA_VDF, velocity, np.radians(DATA_theta), np.radians(DATA_phi))
     # REC_moments = calc_moments_delta(REC_VDF, velocity, np.radians(DATA_theta), np.radians(DATA_phi))
-    DATA_moments = calc_moments_delta(DATA_VDF, velocity, np.radians(REC_theta), np.radians(REC_phi))
-    REC_moments = calc_moments_delta(REC_VDF, velocity, np.radians(REC_theta), np.radians(REC_phi))
+    DATA_moments = calc_moments_delta_SolO(DATA_VDF, velocity, np.radians(REC_theta), np.radians(REC_phi))
+    REC_moments = calc_moments_delta_SolO(REC_VDF, velocity, np.radians(REC_theta), np.radians(REC_phi))
 
     return DATA_moments, REC_moments
 
@@ -207,7 +207,7 @@ def write_pickle(x, fname):
 if __name__=='__main__':
     instrument = 'SolO'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'      # 'Slepians' or 'SphericalHarmonics'
-    makeplot = False                # whether we want to save the diagnostic plots
+    makeplot = True                # whether we want to save the diagnostic plots
     TH = 45                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
@@ -379,8 +379,8 @@ if __name__=='__main__':
         plt.savefig('VDF_paper1_plots/final_plots/capfit3.pdf')
 
     else:
-        for time_idx in tqdm(range(len(times))):
-        # for time_idx in tqdm(range(0,11)): # 533
+        # for time_idx in tqdm(range(len(times))):
+        for time_idx in tqdm(range(0,11)): # 533
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
             lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
