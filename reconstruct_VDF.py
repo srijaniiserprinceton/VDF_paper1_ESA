@@ -19,7 +19,7 @@ func = np.vectorize(datetime.utcfromtimestamp)
 from source_scripts import import_script, setup_rec_grid
 from source_scripts import misc_functions as misc_funcs
 import plot_3D_VDF
-from calculations.calc_moments import calc_moments, spher_moments, calc_moments_delta, calc_moments_delta_SolO
+from calculations.calc_moments import calc_moments, spher_moments, calc_moments_delta
 from source_scripts import fit_2D_gaussian as fit_gauss
 
 def reconstruct_from_PSP(time_idx):
@@ -377,8 +377,8 @@ if __name__=='__main__':
         plt.savefig('VDF_paper1_plots/final_plots/capfit3.pdf')
 
     else:
-        # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(481,482)): # 533  # 481
+        for time_idx in tqdm(range(len(times))):
+            # for time_idx in tqdm(range(481,482)): # 533  # 481
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
             lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
