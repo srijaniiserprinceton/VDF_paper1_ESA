@@ -140,11 +140,11 @@ class SolO:
         THETA = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
         PHI = np.zeros((NTIME, NENERGY, NPHI, NTHETA))
 
-        VDF[:,:,:NPHI,:] = data_ESA.vdf.data
+        VDF[:,:,:NPHI,:] = data_ESA.vdf.data[:,::-1,:,:]
         # energy goes from high to low in ESA data
         ENERGY[:,:,:NPHI,:] = data_ESA.energy.data[:,::-1,:,:]
-        THETA[:,:,:NPHI,:] = data_ESA.theta.data
-        PHI[:,:,:NPHI,:] = data_ESA.phi.data
+        THETA[:,:,:NPHI,:] = data_ESA.theta.data[:,::-1,:,:]
+        PHI[:,:,:NPHI,:] = data_ESA.phi.data[:,::-1,:,:]
 
         '''
         # we want to scale VDF such that the lowest non-zero entry is 1.0

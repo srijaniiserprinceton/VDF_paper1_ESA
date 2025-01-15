@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 if __name__ == "__main__":
-    rec_moments = pickle.load(open('rec_moments_SLEP_TH85_Lmax14_update.pkl', 'rb'))
-    data_moments = pickle.load(open('data_moments_SLEP_TH85_Lmax14_update.pkl', 'rb'))
-    # rec_moments = pickle.load(open('rec_moments_Lmax12.pkl', 'rb'))
-    # data_moments = pickle.load(open('data_moments_Lmax12.pkl', 'rb'))
+    rec_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/rec_moments_SLEP_TH85_Lmax14_update.pkl', 'rb'))
+    data_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/data_moments_SLEP_TH85_Lmax14_update.pkl', 'rb'))
+    # rec_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/rec_moments_solo1.pkl', 'rb'))
+    # data_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/data_moments_solo1.pkl', 'rb'))
 
     # Get the density data 
     rec_den = np.array([rec_moments[i][0]/1e6 for i in rec_moments.keys()])
@@ -50,8 +50,8 @@ if __name__ == "__main__":
     ax[1].hist(vmag_ratio, bins=nbins, range=(lmin,lmax), histtype='bar', density=dflag, alpha=0.5, label=r'$|V_{rec}|/|V_{data}|$ = '+f'${np.round(np.quantile(vmag_ratio, 0.5), 3)}^{{+{np.round(np.quantile(vmag_ratio - np.quantile(vmag_ratio, 0.5), 0.86), 4)}}}_{{{np.round(np.quantile(vmag_ratio, 0.14) - np.quantile(vmag_ratio, 0.5), 4)}}}$', color='tab:blue')
 
     ax[1].hist(vvec_ratio[:,0], bins=nbins, range=(lmin,lmax), histtype=htype, density=dflag, alpha=1, linewidth=2, label=r'$V_{x,rec}/V_{x,data}$ = '+f'${np.round(np.quantile(vvec_ratio[:,0], 0.5), 3)}^{{+{np.round(np.quantile(vvec_ratio[:,0] - np.quantile(vvec_ratio[:,0], 0.5), 0.86), 4)}}}_{{{np.round(np.quantile(vvec_ratio[:,0], 0.14) - np.quantile(vvec_ratio[:,0], 0.5), 4)}}}$', color='k')
-    ax[1].hist(vvec_ratio[:,1], bins=nbins, range=(lmin,lmax), histtype=htype, density=dflag, alpha=1, linewidth=2, label=r'$V_{y,rec}/V_{y,data}$ = '+f'${np.round(np.quantile(vvec_ratio[:,0], 0.5), 3)}^{{+{np.round(np.quantile(vvec_ratio[:,1] - np.quantile(vvec_ratio[:,1], 0.5), 0.86), 4)}}}_{{{np.round(np.quantile(vvec_ratio[:,1], 0.14) - np.quantile(vvec_ratio[:,1], 0.5), 4)}}}$', color='tab:orange')
-    ax[1].hist(vvec_ratio[:,2], bins=nbins, range=(lmin,lmax), histtype=htype, density=dflag, alpha=1, linewidth=2, label=r'$V_{z,rec}/V_{z,data}$ = '+f'${np.round(np.quantile(vvec_ratio[:,0], 0.5), 3)}^{{+{np.round(np.quantile(vvec_ratio[:,2] - np.quantile(vvec_ratio[:,2], 0.5), 0.86), 4)}}}_{{{np.round(np.quantile(vvec_ratio[:,2], 0.14) - np.quantile(vvec_ratio[:,2], 0.5), 4)}}}$', color='tab:green')
+    ax[1].hist(vvec_ratio[:,1], bins=nbins, range=(lmin,lmax), histtype=htype, density=dflag, alpha=1, linewidth=2, label=r'$V_{y,rec}/V_{y,data}$ = '+f'${np.round(np.quantile(vvec_ratio[:,1], 0.5), 3)}^{{+{np.round(np.quantile(vvec_ratio[:,1] - np.quantile(vvec_ratio[:,1], 0.5), 0.86), 4)}}}_{{{np.round(np.quantile(vvec_ratio[:,1], 0.14) - np.quantile(vvec_ratio[:,1], 0.5), 4)}}}$', color='tab:orange')
+    ax[1].hist(vvec_ratio[:,2], bins=nbins, range=(lmin,lmax), histtype=htype, density=dflag, alpha=1, linewidth=2, label=r'$V_{z,rec}/V_{z,data}$ = '+f'${np.round(np.quantile(vvec_ratio[:,2], 0.5), 3)}^{{+{np.round(np.quantile(vvec_ratio[:,2] - np.quantile(vvec_ratio[:,2], 0.5), 0.86), 4)}}}_{{{np.round(np.quantile(vvec_ratio[:,2], 0.14) - np.quantile(vvec_ratio[:,2], 0.5), 4)}}}$', color='tab:green')
     ax[1].legend(frameon=False, fontsize=9)
     ax[1].set_xlabel(r'Velocity Ratios', fontsize=14)
 
@@ -90,5 +90,5 @@ if __name__ == "__main__":
 
     # plt.subplots_adjust(left=0.06, right=0.98, wspace=0.35, top=1.0, bottom=0.1)
     plt.subplots_adjust(left=0.08, right=0.97, hspace=0.05, wspace=0.05, top=0.95, bottom=0.2)
-
+    # plt.show()
     plt.savefig('./moment_rec_distribution.pdf')

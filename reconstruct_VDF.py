@@ -149,12 +149,12 @@ def calc_moments_MMS(time_idx, mask_noisy=False):
     return DATA_moments, REC_moments
 
 def calc_moments_SolO(time_idx):
-    REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * 1e12 * rec_dict.VDF_minval_true[time_idx, :, None, None]
+    REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * rec_dict.VDF_minval_true[time_idx, :, None, None]
     
     # tiling the raw data VDF
     DATA_VDF = np.ones_like(REC_VDF)
     DATA_VDF[:,15:24,26:37] = np.transpose(StepII_bundle.VDF[time_idx] * 1.0, [0, 2, 1])
-    DATA_VDF = DATA_VDF * 1e12 * rec_dict.VDF_minval_true[time_idx,:, None, None]
+    DATA_VDF = DATA_VDF * rec_dict.VDF_minval_true[time_idx,:, None, None]
 
     # tiling the DATA_VDF in the larger grid of the REC_VDF
     DATA_VDF = np.flip(DATA_VDF, axis=1)
@@ -169,10 +169,8 @@ def calc_moments_SolO(time_idx):
     #DATA_theta = DATA_theta - DATA_theta[0]
 
     # in SI units
-    # DATA_moments = calc_moments_delta(DATA_VDF, velocity, np.radians(DATA_theta), np.radians(DATA_phi))
-    # REC_moments = calc_moments_delta(REC_VDF, velocity, np.radians(DATA_theta), np.radians(DATA_phi))
-    DATA_moments = calc_moments_delta_SolO(DATA_VDF, velocity, np.radians(REC_theta), np.radians(REC_phi))
-    REC_moments = calc_moments_delta_SolO(REC_VDF, velocity, np.radians(REC_theta), np.radians(REC_phi))
+    DATA_moments = calc_moments(DATA_VDF[:,15:24,26:37], velocity, np.radians(DATA_theta), np.radians(DATA_phi))
+    REC_moments = calc_moments(REC_VDF[:,15:24,26:37], velocity, np.radians(DATA_theta), np.radians(DATA_phi))
 
     return DATA_moments, REC_moments
 
@@ -207,7 +205,7 @@ def write_pickle(x, fname):
 if __name__=='__main__':
     instrument = 'SolO'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'      # 'Slepians' or 'SphericalHarmonics'
-    makeplot = True                # whether we want to save the diagnostic plots
+    makeplot = False                # whether we want to save the diagnostic plots
     TH = 45                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
@@ -380,7 +378,7 @@ if __name__=='__main__':
 
     else:
         # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(0,11)): # 533
+        for time_idx in tqdm(range(481,482)): # 533  # 481
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
             lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
