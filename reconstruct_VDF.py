@@ -205,7 +205,7 @@ def write_pickle(x, fname):
 if __name__=='__main__':
     instrument = 'SolO'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'      # 'Slepians' or 'SphericalHarmonics'
-    makeplot = False                # whether we want to save the diagnostic plots
+    makeplot = True                # whether we want to save the diagnostic plots
     TH = 45                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
@@ -219,7 +219,7 @@ if __name__=='__main__':
     datascan_mode = False           # if we want to scan over the time interval to find the centroid
     genSlep_once = True             # if we want to run for a large number of times and generate Slepians once
 
-    NEmesh, NPmesh, NTmesh = 200, 201, 101    # High resolution grid for final interpolation.
+    NEmesh, NPmesh, NTmesh = 200, 501, 101    # High resolution grid for final interpolation.
     Espline_order = 3                         # Spline order for final interpolation in energy.
 
     #----------------------READING THE SOURCE FILE----------------------------------#
@@ -377,8 +377,8 @@ if __name__=='__main__':
         plt.savefig('VDF_paper1_plots/final_plots/capfit3.pdf')
 
     else:
-        for time_idx in tqdm(range(len(times))):
-            # for time_idx in tqdm(range(481,482)): # 533  # 481
+        # for time_idx in tqdm(range(len(times))):
+        for time_idx in tqdm(range(79,80)): # 533  # 481
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
             lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
@@ -391,7 +391,7 @@ if __name__=='__main__':
                     data_moments[time_idx], rec_moments[time_idx] = calc_moments_SolO(time_idx)
             else:
                 data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS_SH(time_idx, mask_noisy=False)
-            continue
+            # continue
             # # plotting the uninterpolated VDF
             # plot_VDF.plot_VDF(StepII_bundle, time_idx)
             # continue
@@ -416,14 +416,14 @@ if __name__=='__main__':
             StepII_bundle_plotdict['G'] = StepII_bundle.G
             StepII_bundle_plotdict['V'] = StepII_bundle.V
             StepII_bundle_plotdict['Slep_coeffs'] = StepII_bundle.SLEP_coeffs
-            write_pickle(VDF_3D_bundle, 'VDF3Dbundle_533_MMSplot')
-            write_pickle(StepII_bundle_plotdict, 'StepIIbundle_533_MMSplot')
+            write_pickle(VDF_3D_bundle, f'VDF3Dbundle_{time_idx}_{instrument}plot')
+            write_pickle(StepII_bundle_plotdict, f'StepIIbundle_{time_idx}_{instrument}plot')
             continue
 
             # plotting the 2D slice
             plt.style.use('dark_background')
             plt.figure()
-            plt.pcolormesh(VX[:,NTmesh//2], VY[:,NTmesh//2], VDF_3D_rec[:,NTmesh//2], vmin=0, vmax=7, cmap='inferno', rasterized=True)
+            plt.pcolormesh(VX[:,NTmesh//2], VY[:,NTmesh//2], VDF_3D_rec[:,NTmesh//2], vmin=0, vmax=2, cmap='inferno', rasterized=True)
             plt.gca().set_aspect('equal')
             plt.title(f'Time = {time_HMS}')
             plt.colorbar()

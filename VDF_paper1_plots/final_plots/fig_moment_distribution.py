@@ -86,9 +86,9 @@ if __name__ == "__main__":
     #             # va='bottom', ha='left', color='black', fontsize=20, fontweight='bold')
 
     # fig.text(0.55, 0.04, r'Moment Ratios', ha='center', fontsize=16, fontweight='bold')
-    fig.text(0.01, 0.55, r'Probability Density', va='center', rotation='vertical', fontsize=14)#, fontweight='bold')
+    fig.text(0.01, 0.55, r'Normalized histogram', va='center', rotation='vertical', fontsize=14)#, fontweight='bold')
 
     # plt.subplots_adjust(left=0.06, right=0.98, wspace=0.35, top=1.0, bottom=0.1)
-    plt.subplots_adjust(left=0.08, right=0.97, hspace=0.05, wspace=0.05, top=0.95, bottom=0.2)
+    plt.subplots_adjust(left=0.04, right=0.99, hspace=0.05, wspace=0.05, top=0.95, bottom=0.2)
     # plt.show()
     plt.savefig('./moment_rec_distribution.pdf')
