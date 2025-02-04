@@ -124,7 +124,7 @@ def rotateVectorIntoFieldAligned(Ax, Ay, Az, Nx, Ny, Nz, Px, Py, Pz, Qx, Qy, Qz)
 
 psp_vdf = cdflib.cdf_to_xarray('./input_data_files/2020-01-26_VDFs.cdf', to_datetime=True)
 
-time = psp_vdf.time.data
+time = psp_vdf.unix_time.data
 
 energy = psp_vdf.energy.data
 theta = psp_vdf.theta.data

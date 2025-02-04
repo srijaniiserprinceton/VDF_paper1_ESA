@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.interpolate as interpolate
 
-def get_3D_VDF(vdf_rec_dict):
+def get_3D_VDF(vdf_rec_dict, s=0):
     # B-spline interpolation for each Slepian basis function
     lnE = np.log10(vdf_rec_dict.ENERGY[0,:,0,0])
 
@@ -24,7 +24,7 @@ def get_3D_VDF(vdf_rec_dict):
     G_interp = np.zeros((NSlepians, vdf_rec_dict.NTmesh, vdf_rec_dict.NPmesh))
 
     for Slep_idx in range(NSlepians):
-        t, c, k = interpolate.splrep(lnE, vdf_rec_dict.SLEP_coeffs[:, Slep_idx], s=0, k=vdf_rec_dict.Espline_order)
+        t, c, k = interpolate.splrep(lnE, vdf_rec_dict.SLEP_coeffs[:, Slep_idx], s=s, k=vdf_rec_dict.Espline_order)
         spline = interpolate.BSpline(t, c, k, extrapolate=False)
 
         # B-spline interpolation
