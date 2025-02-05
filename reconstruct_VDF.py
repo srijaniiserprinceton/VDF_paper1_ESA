@@ -82,7 +82,7 @@ def reconstruct_from_SolO_Slepians(time_idx):
                                                                  Nrows=4, Ncols=8)
 
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
-    lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle)
+    lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle, s=E_smoothness)
 
     return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
 
@@ -221,6 +221,7 @@ if __name__=='__main__':
 
     NEmesh, NPmesh, NTmesh = 200, 501, 101    # High resolution grid for final interpolation.
     Espline_order = 3                         # Spline order for final interpolation in energy.
+    E_smoothness = 5e-4                         # the smoothness to induce in energy (needed until cartesian slepians)
 
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
@@ -418,7 +419,7 @@ if __name__=='__main__':
             StepII_bundle_plotdict['Slep_coeffs'] = StepII_bundle.SLEP_coeffs
             write_pickle(VDF_3D_bundle, f'VDF3Dbundle_{time_idx}_{instrument}plot')
             write_pickle(StepII_bundle_plotdict, f'StepIIbundle_{time_idx}_{instrument}plot')
-            continue
+            # continue
 
             # plotting the 2D slice
             plt.style.use('dark_background')
@@ -431,6 +432,7 @@ if __name__=='__main__':
             plt.close()
 
             plot_3D_VDF.plot_VDF(VX, VY, VZ, VDF_3D_rec, time_idx, time_HMS, instrument)
+            continue
             # sys.exit()
 
 
