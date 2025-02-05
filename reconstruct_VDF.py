@@ -124,8 +124,8 @@ def reconstruct_from_MMS_SphericalHarmonics(time_idx):
     write_pickle(VDF_rec_dict, f'./output_data_files/VDF_rec_pklfiles/VDF_2D_rec_{time_idx}')
 
 def calc_moments_MMS(time_idx, mask_noisy=False):
-    DATA_VDF = np.transpose(StepII_bundle.VDF[time_idx] * 1e12 * rec_dict.VDF_minval_true[time_idx,:, None, None], [0, 2, 1])
-    REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * 1e12 * rec_dict.VDF_minval_true[time_idx, :, None, None]
+    DATA_VDF = np.transpose(StepII_bundle.VDF[time_idx] * 1e12 * rec_dict.VDF_minval_true[time_idx,None, None, None], [0, 2, 1])
+    REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * 1e12 * rec_dict.VDF_minval_true[time_idx, None, None, None]
 
     # removing the parts of the data and reconstructed VDF which have larger than NSR = 0.7
     if(mask_noisy):
@@ -203,19 +203,19 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'SolO'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
+    instrument = 'MMS'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'      # 'Slepians' or 'SphericalHarmonics'
-    makeplot = True                # whether we want to save the diagnostic plots
+    makeplot = False                # whether we want to save the diagnostic plots
     TH = 45                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
-    Lmax = 28 #14                       # maximum angular degree for polar Slepian generation
+    Lmax = 16 #14                       # maximum angular degree for polar Slepian generation
     Ncart = 50                      # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250                # Minimum reliable energy shell [in km/s]
     rcond_polcap = 1e-6                # Condition number for the inversion in polar caps
     rcond_cart = 1e-4               # Condition number for the inversion on a 2D plane
     ignore_last_anode = False       # if we want to set the last anode counts to nan
-    N2D_restrict = True             # if we want to truncate the basis functions to Shannon number
+    N2D_restrict = False             # if we want to truncate the basis functions to Shannon number
     datascan_mode = False           # if we want to scan over the time interval to find the centroid
     genSlep_once = True             # if we want to run for a large number of times and generate Slepians once
 
@@ -224,8 +224,8 @@ if __name__=='__main__':
 
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
-    # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
-    filename='input_data_files/SO_2020-07-16_VDF.cdf'       # Change the naming convention so that is it SolO...
+    filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
+    # filename='input_data_files/SO_2020-07-16_VDF.cdf'       # Change the naming convention so that is it SolO...
     # filename='input_data_files/SO_Test.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
@@ -378,7 +378,7 @@ if __name__=='__main__':
 
     else:
         # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(79,80)): # 533  # 481
+        for time_idx in tqdm(range(523,543)):#range(len(times))): # 533  # 481
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
             lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
@@ -394,7 +394,7 @@ if __name__=='__main__':
             # continue
             # # plotting the uninterpolated VDF
             # plot_VDF.plot_VDF(StepII_bundle, time_idx)
-            # continue
+            continue
 
             # converting the grid to unstructured Cartesian
             VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh, savegrids=False)
