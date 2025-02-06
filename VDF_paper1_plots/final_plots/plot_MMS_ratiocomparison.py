@@ -30,6 +30,10 @@ def grid_pol2cart():
 tstamp = 533
 StepII_bundle = read_pickle(f'StepIIbundle_{tstamp}_MMSplot')
 VDF_rec_dict = read_pickle(f'VDF3Dbundle_{tstamp}_MMSplot')
+VDF_minval = np.load('VDF_minval_true_MMS.npy') * StepII_bundle['ENERGY'][:,:,0,0]**2 
+
+# finding the global minval
+VDF_minval_global = np.min(VDF_minval[tstamp][VDF_minval[tstamp] > 0])
 
 # making the first set of plots (energy shell comparison)
 fig, ax = plt.subplots(3, 2, sharex=True, sharey=True, figsize=(8.5,6))
@@ -81,8 +85,17 @@ VX, VY, VZ = grid_pol2cart()
 
 fig, ax = plt.subplots(1, 3, figsize=(12,4.5), sharex=True, sharey=True)
 vv = StepII_bundle['VDF']
+nanmask = vv == 1
+vv = vv * VDF_minval[:, :, np.newaxis, np.newaxis]
+vv = vv / VDF_minval_global
 logvv = np.nan_to_num(np.log10(vv), nan=np.nan, posinf=np.nan, neginf=np.nan)
-logvv[logvv==0] = np.nan
+logvv[nanmask] = np.nan
+
+
+# performing the same scaling for the reconstructed VDF
+tenpow_StepII_bundle = np.power(10, StepII_bundle['fine_from_fine']) \
+                                * VDF_minval[tstamp, :, np.newaxis, np.newaxis]
+StepII_bundle['fine_from_fine'] = np.log10(tenpow_StepII_bundle/ VDF_minval_global)
 
 # plotting the cut in theta
 theta_lr_slice = 8

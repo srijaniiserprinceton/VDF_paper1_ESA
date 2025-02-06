@@ -155,7 +155,7 @@ class SolO:
 
         # we want to scale VDF such that the lowest non-zero entry is 1.0
         VDF[VDF == 0] = np.nan
-        self.VDF_minval_true = np.nanmin(VDF, axis=(2,3))
+        self.VDF_minval_true = np.nanmin(VDF, axis=(1,2,3))
         self.VDF_minval_true[np.isnan(self.VDF_minval_true)] = 0.0
         VDF = VDF / self.VDF_minval_true[:, :, None, None]
 

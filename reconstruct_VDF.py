@@ -209,7 +209,7 @@ if __name__=='__main__':
     TH = 45                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
-    Lmax = 28 #14                       # maximum angular degree for polar Slepian generation
+    Lmax = 28                       # maximum angular degree for polar Slepian generation
     Ncart = 50                      # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250                # Minimum reliable energy shell [in km/s]
     rcond_polcap = 1e-6                # Condition number for the inversion in polar caps
@@ -270,6 +270,8 @@ if __name__=='__main__':
             reconstruct_func = reconstruct_from_SolO_Slepians
         elif(angular_basis == 'SphericalHarmonics'):
             reconstruct_func = reconstruct_from_SolO_SphericalHarmonics
+
+    # sys.exit()
     
     # loading the B-slopes
     bslopes = np.load('./input_data_files/slopes.npy')
@@ -392,7 +394,7 @@ if __name__=='__main__':
                     data_moments[time_idx], rec_moments[time_idx] = calc_moments_SolO(time_idx)
             else:
                 data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS_SH(time_idx, mask_noisy=False)
-            # continue
+            continue
             # # plotting the uninterpolated VDF
             # plot_VDF.plot_VDF(StepII_bundle, time_idx)
             # continue
