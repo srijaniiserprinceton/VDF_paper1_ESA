@@ -150,6 +150,7 @@ class VDF_rec_polarcaps_SphericalHarmonics:
 
         # gyrotropized 2D VDF on a plane
         self.fine_from_fine = np.zeros((self.NENERGY, self.NPHI_ESA, self.NTHETA_ESA))
+        self.smooth_vdf = None
 
         self.SLEP_coeffs = np.zeros((self.NENERGY, (self.Lmax+1)**2), dtype='complex128')
         self.angular_extent_mask()

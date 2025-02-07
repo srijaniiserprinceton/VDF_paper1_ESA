@@ -8,18 +8,18 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 if __name__ == "__main__":
-    rec_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/rec_moments_SLEP_TH85_Lmax14_update.pkl', 'rb'))
-    data_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/data_moments_SLEP_TH85_Lmax14_update.pkl', 'rb'))
-    # rec_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/rec_moments_solo1.pkl', 'rb'))
-    # data_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/data_moments_solo1.pkl', 'rb'))
+    # rec_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/rec_moments_SLEP_TH85_Lmax14_update.pkl', 'rb'))
+    # data_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/data_moments_SLEP_TH85_Lmax14_update.pkl', 'rb'))
+    rec_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/MMS_rec_moments_new2.pkl.pkl', 'rb'))
+    data_moments = pickle.load(open('/home/michael/Research/VDF_paper1_ESA/MMS_data_moments_new2.pkl.pkl', 'rb'))
 
     # Get the density data 
     rec_den = np.array([rec_moments[i][0]/1e6 for i in rec_moments.keys()])
     data_den = np.array([data_moments[i][0]/1e6 for i in data_moments.keys()])
     
     # Get the velocity vectors for the reconstruction and the original data
-    rec_vel  = np.array([rec_moments[i][1]/1000 for i in rec_moments.keys()])
-    data_vel = np.array([data_moments[i][1]/1000 for i in data_moments.keys()])
+    rec_vel  = np.array([rec_moments[i][1]/1000 for i in rec_moments.keys()]) + 1
+    data_vel = np.array([data_moments[i][1]/1000 for i in data_moments.keys()]) + 1
 
     # Get the Temperature information
     rec_temp = np.array([rec_moments[i][2] for i in rec_moments.keys()])
@@ -37,15 +37,15 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(1,3, figsize=(12,3), sharex=True, sharey=True)
 
     nbins = 15
-    lmin = 0.9
-    lmax = 1.1
+    lmin = 0.8
+    lmax = 1.2
     htype = 'step'
     dflag = True
 
     ax[0].hist(den_ratio, bins=nbins, range=(lmin, lmax), histtype='bar', density=dflag, alpha=0.5, label=r'$n_{rec}/n_{data} = $'+f'${np.round(np.quantile(den_ratio, 0.5), 3)}^{{+{np.round(np.quantile(den_ratio - np.quantile(den_ratio, 0.5), 0.86), 4)}}}_{{{np.round(np.quantile(den_ratio, 0.14) - np.quantile(den_ratio, 0.5), 4)}}}$')
     ax[0].legend(frameon=False, fontsize=9)
     ax[0].set_xlabel(r'Density Ratio', fontsize=14)
-    ax[0].set_ylim([0,100])
+    ax[0].set_ylim([0,25])
 
     ax[1].hist(vmag_ratio, bins=nbins, range=(lmin,lmax), histtype='bar', density=dflag, alpha=0.5, label=r'$|V_{rec}|/|V_{data}|$ = '+f'${np.round(np.quantile(vmag_ratio, 0.5), 3)}^{{+{np.round(np.quantile(vmag_ratio - np.quantile(vmag_ratio, 0.5), 0.86), 4)}}}_{{{np.round(np.quantile(vmag_ratio, 0.14) - np.quantile(vmag_ratio, 0.5), 4)}}}$', color='tab:blue')
 
@@ -93,5 +93,5 @@ if __name__ == "__main__":
 
     # plt.subplots_adjust(left=0.06, right=0.98, wspace=0.35, top=1.0, bottom=0.1)
     plt.subplots_adjust(left=0.04, right=0.99, hspace=0.05, wspace=0.05, top=0.95, bottom=0.2)
-    # plt.show()
-    plt.savefig('./moment_rec_distribution.pdf')
+    plt.show()
+    # plt.savefig('./moment_rec_distribution.pdf')

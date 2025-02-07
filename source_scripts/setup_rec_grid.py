@@ -62,6 +62,8 @@ class MMS:
         THETA[:,:,:,:] = data_ESA.theta.data
         PHI[:,:,:,:] = data_ESA.phi.data
 
+        VDF = VDF * ENERGY**2
+
         # we want to scale VDF such that the lowest non-zero entry is 1.0
         VDF[VDF == 0] = np.nan
         self.VDF_minval_true = np.nanmin(VDF, axis=(1,2,3))
@@ -102,7 +104,7 @@ class MMS:
         self.slep_dir = misc_functions.read_config()[0]
 
         # Check Lmax
-        self.Lmax_Nyq = min(int(self.NTHETA_ESA - 2), int((self.NPHI_ESA - 2)/ 2))
+        self.Lmax_Nyq = 16 # min(int(self.NTHETA_ESA - 2), int((self.NPHI_ESA - 2)/ 2))
         if Lmax is None: 
             self.Lmax = self.Lmax_Nyq
         else:
