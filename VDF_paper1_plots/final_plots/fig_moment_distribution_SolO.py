@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt; plt.ion()
 import matplotlib as mpl
 
 if __name__ == "__main__":
-    rec_moments = pickle.load(open('rec_moments_SolO.pkl', 'rb'))
-    data_moments = pickle.load(open('data_moments_SolO.pkl', 'rb'))
+    rec_moments = pickle.load(open('../../SolO_rec_moments_final.pkl', 'rb'))
+    data_moments = pickle.load(open('../../SolO_data_moments_final.pkl', 'rb'))
 
     # Get the density data 
     rec_den = np.array([rec_moments[i][0]/1e6 for i in rec_moments.keys()])

@@ -112,7 +112,7 @@ VX, VY, VZ = grid_pol2cart()
 
 fig, ax = plt.subplots(1, 3, figsize=(12,4.5), sharex=True, sharey=True)
 vv = StepII_bundle['VDF'] / StepII_bundle['ENERGY'][:, :, :, :]**2
-vv_norm = vv/np.nanmax(vv[533])
+vv_norm = vv/np.nanmax(vv[tstamp])
 logvv = np.nan_to_num(np.log10(vv_norm), nan=np.nan, posinf=np.nan, neginf=np.nan)
 logvv[StepII_bundle['VDF'] == 1.0] = np.nan
 
@@ -123,20 +123,20 @@ theta_hr_slice = 53
 # ax[0].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], logvv[tstamp, :, :, theta_lr_slice],
 #                  vmin=0, vmax=3, cmap='inferno', rasterized=True)
 ax[0].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], logvv[tstamp, :, :, theta_lr_slice],
-                 vmin=-7, vmax=0, cmap='inferno', rasterized=True)
+                 vmin=-6, vmax=0, cmap='inferno', rasterized=True)
 ax[0].set_xlim([-1500,1500])
 ax[0].set_ylim([-1500,1500])
 ax[0].set_aspect('equal')
 ax[0].set_title('(C1) MMS-FPI data', fontsize=12, fontweight='bold')
 
 REC_VDF = np.power(10, StepII_bundle['smooth_vdf'])
-REC_VDF = REC_VDF/np.nanmax(vv[533])
+REC_VDF = REC_VDF/np.nanmax(vv[tstamp])
 
 ax[1].set_facecolor('black')
 # ax[1].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], StepII_bundle['fine_from_fine'][:,theta_lr_slice,:],
 #                  vmin=0, vmax=3, cmap='inferno', rasterized=True)
 ax[1].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], np.log10(REC_VDF)[:,theta_lr_slice,:],
-                 vmin=-7, vmax=0, cmap='inferno', rasterized=True)
+                 vmin=-6, vmax=0, cmap='inferno', rasterized=True)
 ax[1].set_xlim([-1500,1500])
 ax[1].set_ylim([-1500,1500])
 ax[1].set_aspect('equal')
@@ -144,13 +144,13 @@ ax[1].set_title('(C2) Slepian fit at FPI resolution', fontsize=12, fontweight='b
 
 Velocity = np.sqrt(VDF_rec_dict['VX']**2 + VDF_rec_dict['VX']**2 + VDF_rec_dict['VZ']**2)
 SUP_VDF = np.power(10, VDF_rec_dict['VDF_3D_rec']) / (VDF_rec_dict['E']**2)[:,NAX,NAX]
-SUP_VDF = SUP_VDF/np.nanmax(vv[533])
+SUP_VDF = SUP_VDF/np.nanmax(vv[tstamp])
 
 ax[2].set_facecolor('black')
 # ax[2].pcolormesh(VDF_rec_dict['VX'][:,theta_hr_slice], VDF_rec_dict['VY'][:,theta_hr_slice], VDF_rec_dict['VDF_3D_rec'][:,theta_hr_slice,:],
 #                vmin=0, vmax=3, cmap='inferno', rasterized=True)
 ax[2].pcolormesh(VDF_rec_dict['VX'][:,theta_hr_slice], VDF_rec_dict['VY'][:,theta_hr_slice], np.log10(SUP_VDF)[:,theta_hr_slice,:],
-               vmin=-7, vmax=0, cmap='inferno', rasterized=True)
+               vmin=-6, vmax=0, cmap='inferno', rasterized=True)
 ax[2].set_xlim([-1500,1500])
 ax[2].set_ylim([-1500,1500])
 ax[2].set_aspect('equal')
@@ -173,8 +173,8 @@ rec_n_arr = np.zeros((Ntimes, 1))
 rec_u_arr = np.zeros((Ntimes, 3))
 rec_p_arr = np.zeros((Ntimes, 6))
 
-data_moments = read_pickle('data_moments')
-rec_moments = read_pickle('rec_moments')
+data_moments = read_pickle('MMS_data_moments_final')
+rec_moments = read_pickle('MMS_rec_moments_final')
 
 for key_idx in tqdm(data_moments.keys()):
     data_n_s, data_u_s, data_p_s = data_moments[key_idx]
@@ -196,7 +196,7 @@ ax[0].set_xlim([0, 150])
 ax[0].set_ylim([0, 150])
 ax[0].set_aspect('equal')
 
-ax[1].plot(data_u_arr[:,0], rec_u_arr[:,0], '.k')
+ax[1].plot(-data_u_arr[:,0], -rec_u_arr[:,0], '.k')
 xabsmax = np.max(np.abs(data_u_arr[:,0]))
 ax[1].set_xlim([60, 410])
 ax[1].set_ylim([60, 410])
@@ -204,11 +204,11 @@ ax[1].set_aspect('equal')
 
 ax[2].plot(data_u_arr[:,1], rec_u_arr[:,1], '.k')
 xabsmax = np.max(np.abs(rec_u_arr[:,1]))
-ax[2].set_xlim([-100, 200])
-ax[2].set_ylim([-100, 200])
+ax[2].set_xlim([-210, 50])
+ax[2].set_ylim([-210, 50])
 ax[2].set_aspect('equal')
 
-ax[3].plot(data_u_arr[:,2], -rec_u_arr[:,2], '.k')
+ax[3].plot(data_u_arr[:,2], rec_u_arr[:,2], '.k')
 xabsmax = np.max(np.abs(rec_u_arr[:,2]))
 ax[3].set_xlim([-180, 100])
 ax[3].set_ylim([-180, 100])

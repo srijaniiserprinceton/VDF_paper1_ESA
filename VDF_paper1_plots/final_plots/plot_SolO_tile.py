@@ -39,8 +39,8 @@ def grid_pol2cart_SLEP():
 
 # loading the saved dictionaries
 tstamp = 79
-StepII_bundle = read_pickle(f'StepIIbundle_{tstamp}_SolOplot')
-VDF_rec_dict = read_pickle(f'VDF3Dbundle_{tstamp}_SolOplot')
+StepII_bundle = read_pickle(f'../../StepIIbundle_{tstamp}_SolOplot')
+VDF_rec_dict = read_pickle(f'../../VDF3Dbundle_{tstamp}_SolOplot')
 
 # making the first set of plots (energy shell comparison)
 fig, ax = plt.subplots(3, 4, sharex=True, sharey=True, figsize=(12,6))
@@ -122,9 +122,10 @@ plt.savefig('Eshell_plots_SolO.pdf')
 # plotting the slices in Cartesian coordinates
 
 fig, ax = plt.subplots(1, 3, figsize=(12,4.5), sharex=True, sharey=True)
-vv = StepII_bundle['VDF']
-logvv = np.nan_to_num(np.log10(vv), nan=np.nan, posinf=np.nan, neginf=np.nan)
-logvv[logvv==0] = np.nan
+vv = StepII_bundle['VDF'] / StepII_bundle['ENERGY'][tstamp, :, :, :]**2
+vv_norm = vv/np.nanmax(vv[tstamp])
+logvv = np.nan_to_num(np.log10(vv_norm), nan=np.nan, posinf=np.nan, neginf=np.nan)
+logvv[StepII_bundle['VDF'] == 1.0] = np.nan
 
 # plotting the cut in theta
 theta_lr_slice = 4
@@ -135,7 +136,7 @@ theta_vhr_slice = 50
 VX, VY, VZ = grid_pol2cart()
 
 ax[0].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], logvv[tstamp, :, :, theta_lr_slice],
-                 vmin=0, vmax=3, cmap='inferno', rasterized=True)
+                 vmin=-3.7, vmax=0, cmap='inferno', rasterized=True)
 ax[0].set_xlim([-750,0])
 ax[0].set_ylim([-350,350])
 ax[0].set_aspect('equal')
@@ -143,17 +144,24 @@ ax[0].set_title('(C1) SolO-PAS data', fontsize=12, fontweight='bold')
 
 VX, VY, VZ = grid_pol2cart_SLEP()
 
+REC_VDF = np.power(10, StepII_bundle['smooth_vdf'])
+REC_VDF = REC_VDF/np.nanmax(vv[tstamp])
+
 ax[1].set_facecolor('black')
-ax[1].pcolormesh(VX[:,:,theta_hr_slice], VY[:,:,theta_hr_slice], StepII_bundle['fine_from_fine'][:,theta_hr_slice,:],
-                 vmin=0, vmax=3, cmap='inferno', rasterized=True)
+ax[1].pcolormesh(VX[:,:,theta_hr_slice], VY[:,:,theta_hr_slice], np.log10(REC_VDF)[:,theta_hr_slice,:],
+                 vmin=-3.7, vmax=0, cmap='inferno', rasterized=True)
 ax[1].set_xlim([-750,0])
 ax[1].set_ylim([-350,350])
 ax[1].set_aspect('equal')
 ax[1].set_title('(C2) Slepian fit at FPI resolution', fontsize=12, fontweight='bold')
 
+Velocity = np.sqrt(VDF_rec_dict['VX']**2 + VDF_rec_dict['VX']**2 + VDF_rec_dict['VZ']**2)
+SUP_VDF = np.power(10, VDF_rec_dict['VDF_3D_rec']) / (VDF_rec_dict['E']**2)[:,NAX,NAX]
+SUP_VDF = SUP_VDF/np.nanmax(vv[tstamp])
+
 ax[2].set_facecolor('black')
-ax[2].pcolormesh(VDF_rec_dict['VX'][:,theta_vhr_slice], VDF_rec_dict['VY'][:,theta_vhr_slice], VDF_rec_dict['VDF_3D_rec'][:,theta_vhr_slice,:],
-               vmin=0, vmax=3, cmap='inferno', rasterized=True)
+ax[2].pcolormesh(VDF_rec_dict['VX'][:,theta_vhr_slice], VDF_rec_dict['VY'][:,theta_vhr_slice], np.log10(SUP_VDF)[:,theta_vhr_slice,:],
+               vmin=-4, vmax=0, cmap='inferno', rasterized=True)
 ax[2].set_xlim([-750,0])
 ax[2].set_ylim([-350,350])
 ax[2].set_aspect('equal')
@@ -176,8 +184,8 @@ rec_n_arr = np.zeros((Ntimes, 1))
 rec_u_arr = np.zeros((Ntimes, 3))
 rec_p_arr = np.zeros((Ntimes, 6))
 
-data_moments = read_pickle('data_moments_SolO')
-rec_moments = read_pickle('rec_moments_SolO')
+data_moments = read_pickle('../../SolO_data_moments_final')
+rec_moments = read_pickle('../../SolO_rec_moments_final')
 
 for key_idx in tqdm(data_moments.keys()):
     data_n_s, data_u_s, data_p_s = data_moments[key_idx]
@@ -211,7 +219,7 @@ ax[2].set_xlim([-100, 200])
 ax[2].set_ylim([-100, 200])
 ax[2].set_aspect('equal')
 
-ax[3].plot(data_u_arr[:,2], -rec_u_arr[:,2], '.k')
+ax[3].plot(data_u_arr[:,2], rec_u_arr[:,2], '.k')
 xabsmax = np.max(np.abs(rec_u_arr[:,2]))
 ax[3].set_xlim([-180, 100])
 ax[3].set_ylim([-180, 100])
