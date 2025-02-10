@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt; plt.ion()
 import matplotlib.cm as cm
 from scipy.io import savemat
 from scipy.stats import norm
+from scipy.ndimage import gaussian_filter
 from datetime import datetime, timedelta
 func = np.vectorize(datetime.utcfromtimestamp)
 
@@ -58,7 +59,7 @@ def reconstruct_from_MMS_Slepians(time_idx):
 
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
     StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, rcond=rcond_polcap)
-
+    return StepII_bundle
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
     lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle)
     return lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle
@@ -124,8 +125,17 @@ def reconstruct_from_MMS_SphericalHarmonics(time_idx):
     write_pickle(VDF_rec_dict, f'./output_data_files/VDF_rec_pklfiles/VDF_2D_rec_{time_idx}')
 
 def calc_moments_MMS(time_idx, mask_noisy=False):
-    DATA_VDF = np.transpose(StepII_bundle.VDF[time_idx] * 1e12 * rec_dict.VDF_minval_true[time_idx, None, None, None], [0, 2, 1])
-    REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * 1e12 * rec_dict.VDF_minval_true[time_idx, None, None, None]
+    tmp_vdf = np.log10(StepII_bundle.VDF[time_idx])
+    tmp_vdf = (8*np.tanh((tmp_vdf - np.log10(1)) / np.log10(1.1)) - 8) + tmp_vdf
+    tmp_vdf = np.power(10, tmp_vdf)
+    # tmp_vdf[tmp_vdf == 1.0] = 0.0
+    DATA_VDF = np.transpose(tmp_vdf * 1e12 * rec_dict.VDF_minval_true[time_idx,None, None, None], [0, 2, 1])
+    REC_VDF = np.power(10, StepII_bundle.smooth_vdf) * 1e12 * rec_dict.VDF_minval_true[time_idx, None, None, None]
+
+    energy = np.transpose(StepII_bundle.ENERGY[time_idx], [0,2,1])
+
+    DATA_VDF = DATA_VDF/energy**2
+    # REC_VDF  = REC_VDF/energy**2
 
     # removing the parts of the data and reconstructed VDF which have larger than NSR = 0.7
     if(mask_noisy):
@@ -206,10 +216,10 @@ if __name__=='__main__':
     instrument = 'MMS'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'      # 'Slepians' or 'SphericalHarmonics'
     makeplot = False                # whether we want to save the diagnostic plots
-    TH = 45                         # the angular radius of the polar cap [in degrees]
+    TH = 85                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
-    Lmax = 28                       # maximum angular degree for polar Slepian generation
+    Lmax = 16                       # maximum angular degree for polar Slepian generation
     Ncart = 50                      # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250                # Minimum reliable energy shell [in km/s]
     rcond_polcap = 1e-6                # Condition number for the inversion in polar caps
@@ -222,6 +232,7 @@ if __name__=='__main__':
     NEmesh, NPmesh, NTmesh = 200, 501, 101    # High resolution grid for final interpolation.
     Espline_order = 3                         # Spline order for final interpolation in energy.
     E_smoothness = 5e-4                         # the smoothness to induce in energy (needed until cartesian slepians)
+    sigma_val = 0.35                # Gaussian smoothing smoothness parameter.
 
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
@@ -381,11 +392,34 @@ if __name__=='__main__':
 
     else:
         # for time_idx in tqdm(range(len(times))):
-        for time_idx in tqdm(range(523,543)):#range(len(times))): # 533  # 481
+        for time_idx in tqdm(range(533, 534)):  # 481
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
-            lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
-            
+            # lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
+            StepII_bundle = reconstruct_func(time_idx)
+
+            # Getting the Gaussian Mask
+            # tmp_vdf = StepII_bundle.VDF[time_idx] * 1.0
+            # tmp_vdf[tmp_vdf == 1.0] = np.nan
+            # mask = (~np.isnan(np.transpose(tmp_vdf, [0,2,1]))).astype('float')
+            # ss = 0.25
+            # mask_sm1 = gaussian_filter(gaussian_filter(mask, sigma=ss, axes=(2), mode='wrap'),sigma=ss, axes=1)
+            # mask_sm1[mask_sm1 > 0] = 1.0
+            # mask_sm1[mask_sm1 == 0] = 16
+            # mask_sm = gaussian_filter(mask_sm1, sigma=sigma_val)
+            # mask_sm = mask * 1.0
+            # mask_sm[mask_sm < 0.5] = 1e-16
+            # mask_sm[((mask_sm1>0).astype('float') - mask) > 0] = 0.05 # (2 sigma)
+            # mask_sm[mask_sm < 1e-6] = 1e-16
+            StepII_bundle.fine_from_fine = (8*np.tanh((StepII_bundle.fine_from_fine - np.log10(1)) / np.log10(1.1)) - 8) +\
+                                            StepII_bundle.fine_from_fine
+
+            # Adding back in the energy trend
+            detrended_VDF = StepII_bundle.fine_from_fine - 2*np.log10(np.transpose(StepII_bundle.ENERGY[time_idx], [0,2,1]))
+
+            # Smooth the VDF
+            StepII_bundle.smooth_vdf = detrended_VDF * 1.0
+
             # # calculating the moments for comparison
             if angular_basis == 'Slepians':
                 if(instrument == 'MMS'):
@@ -397,16 +431,23 @@ if __name__=='__main__':
             continue
             # # plotting the uninterpolated VDF
             # plot_VDF.plot_VDF(StepII_bundle, time_idx)
-            continue
+            # continue
+
+            # superresolving the mask (for plotting purposes)
+            # mask_sr = misc_funcs.interpolate_mask(mask_sm, NEmesh, NPmesh, NTmesh)
+            # swapping theta and phi axes
+            # mask_sr = np.moveaxis(mask_sr, 1, 2)
 
             # converting the grid to unstructured Cartesian
             VX, VY, VZ = misc_funcs.grid_pol2cart(lnE_mesh, theta_mesh, phi_mesh, savegrids=False)
-
+            
             VDF_3D_bundle = {}
+            VDF_3D_rec = (8*np.tanh((VDF_3D_rec - np.log10(0.98)) / np.log10(1.1)) - 8) + VDF_3D_rec
             VDF_3D_bundle['VDF_3D_rec'] = VDF_3D_rec
             VDF_3D_bundle['VX'] = VX
             VDF_3D_bundle['VY'] = VY
             VDF_3D_bundle['VZ'] = VZ
+            VDF_3D_bundle['E'] = np.power(10, lnE_mesh)
 
             StepII_bundle_plotdict = {}
             StepII_bundle_plotdict['ENERGY'] = StepII_bundle.ENERGY
@@ -416,12 +457,13 @@ if __name__=='__main__':
             StepII_bundle_plotdict['SLEP_THETA'] = StepII_bundle.SLEP_THETA
             StepII_bundle_plotdict['SLEP_PHI'] = StepII_bundle.SLEP_PHI
             StepII_bundle_plotdict['fine_from_fine'] = StepII_bundle.fine_from_fine
+            StepII_bundle_plotdict['smooth_vdf'] = StepII_bundle.smooth_vdf
             StepII_bundle_plotdict['G'] = StepII_bundle.G
             StepII_bundle_plotdict['V'] = StepII_bundle.V
             StepII_bundle_plotdict['Slep_coeffs'] = StepII_bundle.SLEP_coeffs
             write_pickle(VDF_3D_bundle, f'VDF3Dbundle_{time_idx}_{instrument}plot')
             write_pickle(StepII_bundle_plotdict, f'StepIIbundle_{time_idx}_{instrument}plot')
-            # continue
+            continue
 
             # plotting the 2D slice
             plt.style.use('dark_background')

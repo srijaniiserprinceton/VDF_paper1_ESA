@@ -2,6 +2,7 @@ import os
 import numpy as np
 import spherepy as sp
 from scipy.special import sph_harm
+from scipy.interpolate import griddata, interp1d
 NAX = np.newaxis
 
 def grid_pol2cart(lnE, tt, pp, savegrids=False):
@@ -82,3 +83,24 @@ def reject_outliers(data, m = 3):
     mdev = np.median(d)
     s = d/mdev if mdev else np.zeros(len(d))
     return data[s<m]
+
+def interpolate_mask(mask, NEfine, NPfine, NTfine):
+    NE, NT, NP = mask.shape
+    P, T = np.linspace(-1,1,NP), np.linspace(-1,1,NT)
+    PP, TT = np.meshgrid(P, T, indexing='ij')
+    Pfine, Tfine = np.linspace(-1,1,NPfine), np.linspace(-1,1,NTfine)
+    PPfine, TTfine = np.meshgrid(Pfine, Tfine, indexing='ij')
+
+    # first interpolating in theta and phi
+    mask_interp1 = []
+    for Eidx in range(NE):
+        mask_interp1.append(griddata((PP.flatten(), TT.flatten()), mask[Eidx].flatten(),
+                           (PPfine, TTfine), method='nearest'))
+
+    mask_interp1 = np.asarray(mask_interp1)
+
+    # next interpolating in along the energy direction
+    f_interp = interp1d(np.linspace(0,1,NE), mask_interp1, axis=0, kind='nearest')
+    mask_interp = f_interp(np.linspace(0,1,NEfine))
+    
+    return mask_interp
