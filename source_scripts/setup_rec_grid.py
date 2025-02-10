@@ -158,9 +158,9 @@ class SolO:
         VDF = VDF * ENERGY**2
         # we want to scale VDF such that the lowest non-zero entry is 1.0
         VDF[VDF == 0] = np.nan
-        self.VDF_minval_true = np.nanmin(VDF, axis=(1,2,3))
+        self.VDF_minval_true = np.nanmin(VDF, axis=(2,3))
         self.VDF_minval_true[np.isnan(self.VDF_minval_true)] = 0.0
-        VDF = VDF / self.VDF_minval_true[:, None, None, None]
+        VDF = VDF / self.VDF_minval_true[:, :, None, None]
 
         # # changing the nan location to unity before fitting using polar Slepians (will make them zero when taking log)
         # self.nanval = np.nan #1e-5

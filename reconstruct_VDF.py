@@ -83,7 +83,7 @@ def reconstruct_from_SolO_Slepians(time_idx):
     #=============STEP II: Decomposing 3D measured VDF into Slepians on polar caps (gyrotropic)======================#
     StepII_bundle = VDF_rec_polarcaps.VDF_rec_polarcaps_Slepians(rec_dict, time_idx, rcond=rcond_polcap,
                                                                  Nrows=4, Ncols=8)
-    return StepII_bundle
+    # return StepII_bundle
     #=============STEP III: Decomposing 2D gyrotropized VDF into Slepians in 2D (V{perp} vs V{||})===================#
     lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec = VDF_rec_final.get_3D_VDF(StepII_bundle, s=E_smoothness)
 
@@ -161,15 +161,17 @@ def calc_moments_MMS(time_idx, mask_noisy=False):
 
 def calc_moments_SolO(time_idx):
     # REC_VDF = np.power(10, StepII_bundle.fine_from_fine) * rec_dict.VDF_minval_true[time_idx, None, None, None]
-    REC_VDF = np.power(10, StepII_bundle.smooth_vdf) * rec_dict.VDF_minval_true[time_idx, None, None, None]
+    REC_VDF = np.power(10, StepII_bundle.smooth_vdf) * rec_dict.VDF_minval_true[time_idx, :, None, None]
     
     # tiling the DATA_VDF in the larger grid of the REC_VDF
-    DATA_VDF = np.ones_like(REC_VDF)
-    tmp_vdf = np.log10(StepII_bundle.VDF[time_idx])
-    tmp_vdf = (8*np.tanh((tmp_vdf - np.log10(1)) / np.log10(1.1)) - 8) + tmp_vdf
-    tmp_vdf = np.power(10, tmp_vdf)
-    DATA_VDF[:,15:24,26:37] = np.transpose(tmp_vdf * 1.0, [0, 2, 1])
-    DATA_VDF = DATA_VDF * rec_dict.VDF_minval_true[time_idx, None, None, None]
+    DATA_VDF = np.zeros_like(REC_VDF)
+    # tmp_vdf = np.log10(StepII_bundle.VDF[time_idx])
+    # tmp_vdf = (8*np.tanh((tmp_vdf - np.log10(1)) / np.log10(1.1)) - 8) + tmp_vdf
+    # tmp_vdf = np.power(10, tmp_vdf)
+    DATA_VDF[:,15:24,26:37] = np.transpose(np.log10(StepII_bundle.VDF[time_idx]) * 1.0, [0, 2, 1])
+    DATA_VDF = (16*np.tanh((DATA_VDF - np.log10(1)) / np.log10(1.1)) - 16) + DATA_VDF
+    DATA_VDF = np.power(10, DATA_VDF)
+    DATA_VDF = DATA_VDF * rec_dict.VDF_minval_true[time_idx, :, None, None]
 
     DATA_VDF = np.flip(DATA_VDF, axis=1)
 
@@ -402,8 +404,8 @@ if __name__=='__main__':
         for time_idx in tqdm(range(79, 80)):  # 481
             time_HMS = func(data.unix_time.values)[time_idx].strftime('%Y-%m-%d %H:%M:%S')
             # StepII_bundle = reconstruct_func(time_idx)
-            # lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
-            StepII_bundle = reconstruct_func(time_idx)
+            lnE_mesh, theta_mesh, phi_mesh, VDF_3D_rec, StepII_bundle = reconstruct_func(time_idx)
+            # StepII_bundle = reconstruct_func(time_idx)
 
             # Getting the Gaussian Mask
             # tmp_vdf = StepII_bundle.VDF[time_idx] * 1.0
@@ -418,7 +420,7 @@ if __name__=='__main__':
             # mask_sm[mask_sm < 0.5] = 1e-16
             # mask_sm[((mask_sm1>0).astype('float') - mask) > 0] = 0.05 # (2 sigma)
             # mask_sm[mask_sm < 1e-6] = 1e-16
-            StepII_bundle.fine_from_fine = (8*np.tanh((StepII_bundle.fine_from_fine - np.log10(1)) / np.log10(1.1)) - 8) +\
+            StepII_bundle.fine_from_fine = (16*np.tanh((StepII_bundle.fine_from_fine - np.log10(1)) / np.log10(1.1)) - 16) +\
                                             StepII_bundle.fine_from_fine
 
             # Adding back in the energy trend
@@ -435,7 +437,7 @@ if __name__=='__main__':
                     data_moments[time_idx], rec_moments[time_idx] = calc_moments_SolO(time_idx)
             else:
                 data_moments[time_idx], rec_moments[time_idx] = calc_moments_MMS_SH(time_idx, mask_noisy=False)
-            continue
+            # continue
             # # plotting the uninterpolated VDF
             # plot_VDF.plot_VDF(StepII_bundle, time_idx)
             # continue
