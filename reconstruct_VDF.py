@@ -222,19 +222,19 @@ def write_pickle(x, fname):
         pickle.dump(x, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__=='__main__':
-    instrument = 'MMS'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
+    instrument = 'SolO'              # currently we have 'PSP-SPAN', 'MMS' and 'SolO' (under construction)
     angular_basis = 'Slepians'      # 'Slepians' or 'SphericalHarmonics'
     makeplot = False                # whether we want to save the diagnostic plots
-    TH = 85                         # the angular radius of the polar cap [in degrees]
+    TH = 45                         # the angular radius of the polar cap [in degrees]
     iterative_fit = False            # if we want the polar cap to be iteratively fitted from Lmin -> Lmax
     Lmin = 8                        # minimum angular degree for polar Slepian generation
-    Lmax = 16                       # maximum angular degree for polar Slepian generation
+    Lmax = 28                       # maximum angular degree for polar Slepian generation
     Ncart = 50                      # effective Shannon number of 2D Cartesian Slepian functions
     Vmin_shell = 250                # Minimum reliable energy shell [in km/s]
     rcond_polcap = 1e-6                # Condition number for the inversion in polar caps
     rcond_cart = 1e-4               # Condition number for the inversion on a 2D plane
     ignore_last_anode = False       # if we want to set the last anode counts to nan
-    N2D_restrict = False             # if we want to truncate the basis functions to Shannon number
+    N2D_restrict = True             # if we want to truncate the basis functions to Shannon number
     datascan_mode = False           # if we want to scan over the time interval to find the centroid
     genSlep_once = True             # if we want to run for a large number of times and generate Slepians once
 
@@ -245,8 +245,8 @@ if __name__=='__main__':
 
     #----------------------READING THE SOURCE FILE----------------------------------#
     # filename = './input_data_files/2020-01-26_VDFs.cdf'
-    filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
-    # filename='input_data_files/SO_2020-07-16_VDF.cdf'       # Change the naming convention so that is it SolO...
+    # filename = './input_data_files/MMS_2016-01-11_VDF_and_ERRs.cdf'
+    filename='input_data_files/SO_2020-07-16_VDF.cdf'       # Change the naming convention so that is it SolO...
     # filename='input_data_files/SO_Test.cdf'
     data = cdflib.cdf_to_xarray(filename, to_datetime=True)
 
@@ -277,7 +277,8 @@ if __name__=='__main__':
     
     # full FOV instrument
     elif(instrument=='SolO'): 
-        rec_dict = setup_rec_grid.SolO(data, TH, Lmax=Lmax, Nmesh=(NEmesh, NPmesh, NTmesh), Espline_order=Espline_order, makeplot=makeplot)
+        rec_dict = setup_rec_grid.SolO(data, TH, Lmax=Lmax, Nmesh=(NEmesh, NPmesh, NTmesh), Espline_order=Espline_order,
+                                       makeplot=makeplot, datascan_mode=datascan_mode)
         if(angular_basis == 'Slepians'):
             if(genSlep_once):
                 # saving these files as MATLAB readable arrays for generating Slepian functions
@@ -303,6 +304,8 @@ if __name__=='__main__':
 
     data_moments = {}
     rec_moments = {}
+
+    # sys.exit()
 
     if(datascan_mode):
         for time_idx in tqdm(range(len(times))):
@@ -343,20 +346,22 @@ if __name__=='__main__':
         fig, ax = plt.subplots(1, 2, figsize=(10,4), sharey=True)
 
         (mu, sigma) = norm.fit(rec_dict.Eshell_info[:,2])
-        n, bins, patches = ax[0].hist(rec_dict.Eshell_info[:,2], 10, density=True, alpha=0.75, color='skyblue', edgecolor='black')
+        n, bins, patches = ax[0].hist(rec_dict.Eshell_info[:,2], 10, density=True,
+                                      alpha=0.75, color='skyblue', edgecolor='black')
         y = norm.pdf(bins, mu, sigma)
         ax[0].plot(bins, y, 'r--', linewidth=2)
         ax[0].axvline(mu, ls='dotted', color='black', label=r'$\phi_{\rm{cen}}$ = %.2f'%mu)
         ax[0].legend(loc=2)
 
         (mu, sigma) = norm.fit(rec_dict.Eshell_info[:,3])
-        n, bins, patches = ax[1].hist(rec_dict.Eshell_info[:,3], 10, density=True, alpha=0.75, color='skyblue', edgecolor='black')
+        n, bins, patches = ax[1].hist(rec_dict.Eshell_info[:,3], 10, density=True,
+                                      alpha=0.75, color='skyblue', edgecolor='black')
         y = norm.pdf(bins, mu, sigma)
         ax[1].plot(bins, y, 'r--', linewidth=2)
         ax[1].axvline(mu, ls='dotted', color='black', label=r'$\theta_{\rm{cen}}$ = %.2f'%mu)
         ax[1].legend(loc=2)
 
-        ax[0].set_ylabel('Normalized histogram')
+        ax[0].set_ylabel('Normalized counts')
         ax[0].set_xlabel(r'$\phi_0$')
         ax[1].set_xlabel(r'$\theta_0$')
 

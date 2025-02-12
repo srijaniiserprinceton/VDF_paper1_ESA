@@ -135,7 +135,14 @@ ax[0,0].set_ylim([-1500,1500])
 DATA_VDF = read_pickle('DATA_VDF_MMS')
 REC_VDF = read_pickle('REC_VDF_MMS')
 
-ratio = np.log10(DATA_VDF[~nanmask] / REC_VDF[~nanmask])
+DATA_NORM = DATA_VDF / np.nanmax(DATA_VDF)
+
+# this is from the limits of the Cartesian slice plot
+mask2 = np.log10(DATA_NORM) < -6
+
+mask_total = nanmask + mask2
+
+ratio = np.log10(DATA_VDF[~mask_total] / REC_VDF[~mask_total])
 ax[1,0].hist(ratio, range=(-2,2), bins=50, density=True)
 # ax.set_aspect('equal')
 ax[1,0].set_xlabel(r'$log_{10}(f_{\mathrm{rec}}/f_{\mathrm{MMS}})$', fontsize=18, fontweight='bold')

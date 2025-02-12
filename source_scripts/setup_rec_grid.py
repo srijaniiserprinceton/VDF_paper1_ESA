@@ -133,7 +133,8 @@ class MMS:
         self.vmin_t = np.ones_like(self.vmax_t)
 
 class SolO:
-    def __init__(self, data_ESA, TH=45, Lmax=None, Nmesh=(100, 201, 101), Espline_order=3, makeplot = True):
+    def __init__(self, data_ESA, TH=45, Lmax=None, Nmesh=(100, 201, 101), Espline_order=3,
+                 makeplot = True, datascan_mode=False):
         self.instrument = 'SolO'
 
         NTIME, NENERGY, NPHI, NTHETA = data_ESA.vdf.data.shape
@@ -155,7 +156,8 @@ class SolO:
         VDF = VDF / self.VDF_minval_true
         '''
 
-        VDF = VDF * ENERGY**2
+        if(datascan_mode): pass
+        else: VDF = VDF * ENERGY**2
         # we want to scale VDF such that the lowest non-zero entry is 1.0
         VDF[VDF == 0] = np.nan
         self.VDF_minval_true = np.nanmin(VDF, axis=(2,3))
