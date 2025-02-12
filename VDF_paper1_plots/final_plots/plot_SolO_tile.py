@@ -39,8 +39,8 @@ def grid_pol2cart_SLEP():
 
 # loading the saved dictionaries
 tstamp = 79
-StepII_bundle = read_pickle(f'../../StepIIbundle_{tstamp}_SolOplot')
-VDF_rec_dict = read_pickle(f'../../VDF3Dbundle_{tstamp}_SolOplot')
+StepII_bundle = read_pickle(f'StepIIbundle_{tstamp}_SolOplot')
+VDF_rec_dict = read_pickle(f'VDF3Dbundle_{tstamp}_SolOplot')
 
 # making the first set of plots (energy shell comparison)
 fig, ax = plt.subplots(3, 4, sharex=True, sharey=True, figsize=(12,6))
@@ -121,7 +121,7 @@ plt.savefig('Eshell_plots_SolO.pdf')
 
 # plotting the slices in Cartesian coordinates
 
-fig, ax = plt.subplots(1, 3, figsize=(12,4.5), sharex=True, sharey=True)
+fig, ax = plt.subplots(1, 3, figsize=(13.5,4.5), sharex=True, sharey=True)
 vv = StepII_bundle['VDF'] / StepII_bundle['ENERGY'][tstamp, :, :, :]**2
 vv_norm = vv/np.nanmax(vv[tstamp])
 logvv = np.nan_to_num(np.log10(vv_norm), nan=np.nan, posinf=np.nan, neginf=np.nan)
@@ -135,8 +135,8 @@ theta_vhr_slice = 50
 # getting the Cartesian coordinates for the original grid
 VX, VY, VZ = grid_pol2cart()
 
-ax[0].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], logvv[tstamp, :, :, theta_lr_slice],
-                 vmin=-3.7, vmax=0, cmap='inferno', rasterized=True)
+im = ax[0].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], logvv[tstamp, :, :, theta_lr_slice],
+                      vmin=-4.1, vmax=0, cmap='inferno', rasterized=True)
 ax[0].set_xlim([-750,0])
 ax[0].set_ylim([-350,350])
 ax[0].set_aspect('equal')
@@ -149,11 +149,11 @@ REC_VDF = REC_VDF/np.nanmax(vv[tstamp])
 
 ax[1].set_facecolor('black')
 ax[1].pcolormesh(VX[:,:,theta_hr_slice], VY[:,:,theta_hr_slice], np.log10(REC_VDF)[:,theta_hr_slice,:],
-                 vmin=-3.7, vmax=0, cmap='inferno', rasterized=True)
+                 vmin=-4.1, vmax=0, cmap='inferno', rasterized=True)
 ax[1].set_xlim([-750,0])
 ax[1].set_ylim([-350,350])
 ax[1].set_aspect('equal')
-ax[1].set_title('(C2) Slepian fit at FPI resolution', fontsize=12, fontweight='bold')
+ax[1].set_title('(C2) Slepian fit at PAS resolution', fontsize=12, fontweight='bold')
 
 Velocity = np.sqrt(VDF_rec_dict['VX']**2 + VDF_rec_dict['VX']**2 + VDF_rec_dict['VZ']**2)
 SUP_VDF = np.power(10, VDF_rec_dict['VDF_3D_rec']) / (VDF_rec_dict['E']**2)[:,NAX,NAX]
@@ -161,15 +161,19 @@ SUP_VDF = SUP_VDF/np.nanmax(vv[tstamp])
 
 ax[2].set_facecolor('black')
 ax[2].pcolormesh(VDF_rec_dict['VX'][:,theta_vhr_slice], VDF_rec_dict['VY'][:,theta_vhr_slice], np.log10(SUP_VDF)[:,theta_vhr_slice,:],
-               vmin=-4, vmax=0, cmap='inferno', rasterized=True)
+               vmin=-4.1, vmax=0, cmap='inferno', rasterized=True)
 ax[2].set_xlim([-750,0])
 ax[2].set_ylim([-350,350])
 ax[2].set_aspect('equal')
 ax[2].set_title('(C3) Reconstruction at high resolution', fontsize=12, fontweight='bold')
 
-plt.subplots_adjust(left=0.08, right=0.97, hspace=0.05, wspace=0.05, top=0.95, bottom=0.1)
+fig.subplots_adjust(right=0.945)
+cbar_ax = fig.add_axes([0.95, 0.15, 0.01, 0.75])
+fig.colorbar(im, cax=cbar_ax)
 
-fig.text(0.55, 0.04, r'$V_x$ [km/s]', ha='center')
+plt.subplots_adjust(left=0.07, right=0.945, hspace=0.05, wspace=0.05, top=0.95, bottom=0.1)
+
+fig.text(0.55, 0.02, r'$V_x$ [km/s]', ha='center')
 fig.text(0.001, 0.5, r'$V_y$ [km/s]', va='center', rotation='vertical')
 
 plt.savefig('Cart_slice_rec_SolO.pdf')
@@ -184,8 +188,8 @@ rec_n_arr = np.zeros((Ntimes, 1))
 rec_u_arr = np.zeros((Ntimes, 3))
 rec_p_arr = np.zeros((Ntimes, 6))
 
-data_moments = read_pickle('../../SolO_data_moments_final')
-rec_moments = read_pickle('../../SolO_rec_moments_final')
+data_moments = read_pickle('SolO_data_moments_final')
+rec_moments = read_pickle('SolO_rec_moments_final')
 
 for key_idx in tqdm(data_moments.keys()):
     data_n_s, data_u_s, data_p_s = data_moments[key_idx]

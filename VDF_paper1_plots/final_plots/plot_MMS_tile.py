@@ -16,7 +16,7 @@ def read_pickle(fname):
 
 def grid_pol2cart():
     E, THETA, PHI = StepII_bundle['ENERGY'][0,:,0,0], np.radians(StepII_bundle['ESA_THETA'][0,0]),\
-                    np.radians(StepII_bundle['ESA_PHI'][0,0])
+                    np.radians(StepII_bundle['ESA_PHI'][0,0] + 180)
     # making the Cartesian grid
     Vmag = 13.85 * np.sqrt(E)
     VX = Vmag[:, NAX, NAX] * np.sin(THETA)[NAX, :, :] * np.cos(PHI)[NAX, :, :]
@@ -28,13 +28,13 @@ def grid_pol2cart():
 
 # loading the saved dictionaries
 tstamp = 533
-StepII_bundle = read_pickle(f'../../StepIIbundle_{tstamp}_MMSplot')
-VDF_rec_dict = read_pickle(f'../../VDF3Dbundle_{tstamp}_MMSplot')
+StepII_bundle = read_pickle(f'StepIIbundle_{tstamp}_MMSplot')
+VDF_rec_dict = read_pickle(f'VDF3Dbundle_{tstamp}_MMSplot')
 
 # making the first set of plots (energy shell comparison)
 fig, ax = plt.subplots(3, 4, sharex=True, sharey=True, figsize=(12,6))
 
-vmin, vmax = 0, 3
+vmin, vmax = 0, 3.5
 cmap = 'inferno'
 
 count = 1
@@ -46,7 +46,7 @@ for i, E_idx in enumerate(range(16,22)):
     # note that for FPI, theta array stays the same at different times but phi array changes
     tt_orig, pp_orig, vv = StepII_bundle['ESA_THETA'][tstamp, E_idx, :, :],\
                            StepII_bundle['ESA_PHI'][tstamp, E_idx, :, :],\
-                           StepII_bundle['VDF'][tstamp, E_idx, :, :] 
+                           np.roll(StepII_bundle['VDF'][tstamp, E_idx, :, :], 16, axis=0) 
 
     # calculating the log and setting +\- inf to nan
     logvv = np.log10(vv)
@@ -67,7 +67,8 @@ for i, E_idx in enumerate(range(16,22)):
     col = col + 2
 
     E = StepII_bundle['ENERGY'][tstamp, E_idx, 0, 0]
-    ax[row,col].pcolormesh(StepII_bundle['SLEP_PHI'], StepII_bundle['SLEP_THETA'], StepII_bundle['fine_from_fine'][E_idx],
+    ax[row,col].pcolormesh(StepII_bundle['SLEP_PHI'], StepII_bundle['SLEP_THETA'],
+                           np.roll(StepII_bundle['fine_from_fine'][E_idx], 16, axis=1),
                            cmap=cmap, vmin=vmin, vmax=vmax, rasterized=True)
     ax[row,col].set_aspect('equal')
     ax[row,col].set_xlim([0, 360])
@@ -122,7 +123,7 @@ theta_hr_slice = 53
 
 # ax[0].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], logvv[tstamp, :, :, theta_lr_slice],
 #                  vmin=0, vmax=3, cmap='inferno', rasterized=True)
-ax[0].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], logvv[tstamp, :, :, theta_lr_slice],
+im = ax[0].pcolormesh(VX[:,:,theta_lr_slice], VY[:,:,theta_lr_slice], logvv[tstamp, :, :, theta_lr_slice],
                  vmin=-6, vmax=0, cmap='inferno', rasterized=True)
 ax[0].set_xlim([-1500,1500])
 ax[0].set_ylim([-1500,1500])
@@ -149,14 +150,18 @@ SUP_VDF = SUP_VDF/np.nanmax(vv[tstamp])
 ax[2].set_facecolor('black')
 # ax[2].pcolormesh(VDF_rec_dict['VX'][:,theta_hr_slice], VDF_rec_dict['VY'][:,theta_hr_slice], VDF_rec_dict['VDF_3D_rec'][:,theta_hr_slice,:],
 #                vmin=0, vmax=3, cmap='inferno', rasterized=True)
-ax[2].pcolormesh(VDF_rec_dict['VX'][:,theta_hr_slice], VDF_rec_dict['VY'][:,theta_hr_slice], np.log10(SUP_VDF)[:,theta_hr_slice,:],
+ax[2].pcolormesh(-VDF_rec_dict['VX'][:,theta_hr_slice], -VDF_rec_dict['VY'][:,theta_hr_slice], np.log10(SUP_VDF)[:,theta_hr_slice,:],
                vmin=-6, vmax=0, cmap='inferno', rasterized=True)
 ax[2].set_xlim([-1500,1500])
 ax[2].set_ylim([-1500,1500])
 ax[2].set_aspect('equal')
 ax[2].set_title('(C3) Reconstruction at high resolution', fontsize=12, fontweight='bold')
 
-plt.subplots_adjust(left=0.08, right=0.97, hspace=0.05, wspace=0.05, top=0.95, bottom=0.1)
+fig.subplots_adjust(right=0.945)
+cbar_ax = fig.add_axes([0.95, 0.15, 0.01, 0.75])
+fig.colorbar(im, cax=cbar_ax)
+
+plt.subplots_adjust(left=0.08, right=0.945, hspace=0.05, wspace=0.05, top=0.95, bottom=0.1)
 
 fig.text(0.55, 0.04, r'$V_x$ [km/s]', ha='center')
 fig.text(0.001, 0.5, r'$V_y$ [km/s]', va='center', rotation='vertical')
