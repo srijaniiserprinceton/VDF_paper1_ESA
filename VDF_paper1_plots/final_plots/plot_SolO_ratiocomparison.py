@@ -188,6 +188,7 @@ fig.text(0.001, 0.75, r'$V_y$ [km/s]', va='center', rotation='vertical')
 
 fig.subplots_adjust(right=0.95)
 cbar_ax = fig.add_axes([0.952, 0.68, 0.01, 0.15])
+# cbar_ax.text(0.5, 1.15, r'$log_{10}\left(\frac{f_{\rm{rec}}}{f_{\rm{obs}}}\right)$', ha='center', va='top', transform=cbar_ax.transAxes)
 fig.colorbar(im, cax=cbar_ax)
 
 ax[0,0].text(0.86, 0.92, f'(A1)', transform=ax[0,0].transAxes,
@@ -198,6 +199,13 @@ ax[0,1].text(0.86, 0.92, f'(B1)', transform=ax[0,1].transAxes,
              va='bottom', ha='left', color='black', fontweight='bold')
 ax[1,1].text(0.86, 0.92, f'(B2)', transform=ax[1,1].transAxes,
              va='bottom', ha='left', color='black', fontweight='bold')
+
+t = ax[0,0].text(0.03, 0.05, r'$log_{10}\left(\frac{f_{\rm{rec}}}{f_{\rm{MMS}}}\right)$', transform=ax[0,0].transAxes,
+                 va='bottom', ha='left', color='black', fontweight='bold')
+t.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='black'))
+t = ax[0,1].text(0.03, 0.05, r'$log_{10}\left(\frac{f_{\rm{rec}}}{f_{\rm{SolO}}}\right)$', transform=ax[0,1].transAxes,
+                 va='bottom', ha='left', color='black', fontweight='bold')
+t.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='black'))
 
 plt.subplots_adjust(top=0.94, bottom=0.08, left=0.1, right=0.94, hspace=0.3)
 plt.savefig('ratiocompare.pdf')
